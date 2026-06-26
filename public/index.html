@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raika Card Queue - ลงชื่อรอเล่นกับ Kerori Raika</title>
+  <meta name="description" content="หน้าลงทะเบียนจองคิวเล่นการ์ดเกมกับ Kerori Raika แบบเรียลไทม์ สำหรับผู้ชมสตรีม">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Grid overlay background matching the design -->
+  <div class="grid-overlay" id="gridOverlay"></div>
+
+  <div class="page-container">
+    <header>
+      <h1 class="main-title" id="pageTitle">ลงชื่อรอเล่น (ตบ)</h1>
+      <div class="subtitle">กับ Kerori Raika</div>
+    </header>
+
+    <main class="content-wrapper">
+      <!-- Active Game Badge -->
+      <div class="game-badge" id="activeGameBadge">Cardfight Vanguard DD2</div>
+
+      <!-- Queue input box container -->
+      <form id="registrationForm" class="register-form-container">
+        <input 
+          type="text" 
+          id="usernameInput" 
+          class="register-input" 
+          placeholder="ชื่อในเกม" 
+          maxlength="25" 
+          required 
+          autocomplete="off"
+        >
+      </form>
+
+      <!-- Queue list -->
+      <ul class="queue-list" id="queueList">
+        <!-- Rendered dynamically -->
+      </ul>
+    </main>
+  </div>
+
+  <!-- Character Image -->
+  <div class="character-container">
+    <img src="assets/raika_1.png" alt="Kerori Raika Character" class="character-img" id="characterImage">
+  </div>
+
+  <!-- Socket.io library from CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Client JavaScript -->
+  <script src="client.js"></script>
+</body>
+</html>

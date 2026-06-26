@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raika Card Control & Widget Panel</title>
+  <meta name="description" content="แผงควบคุมระบบคิวและวิดเจตสำหรับสตรีมเมอร์ Kerori Raika">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Grid overlay background -->
+  <div class="grid-overlay" id="gridOverlay"></div>
+
+  <div class="admin-container">
+    <!-- Left Column: Controls and Queue List -->
+    <div class="admin-left">
+      <!-- Game toggle & Reset Row -->
+      <div class="admin-header-row">
+        <!-- Game Dropdown Button -->
+        <div class="game-selector-container">
+          <button class="btn-game-toggle" id="gameToggleBtn">
+            <span id="currentGameText">Cardfight Vanguard DD2</span>
+            <span>▼</span>
+          </button>
+          <ul class="game-dropdown-menu" id="gameDropdownMenu">
+            <li class="game-dropdown-item" data-game="Cardfight Vanguard DD2">Cardfight Vanguard DD2</li>
+            <li class="game-dropdown-item" data-game="Yu-Gi-Oh! Master Duel">Yu-Gi-Oh! Master Duel</li>
+          </ul>
+        </div>
+        
+        <!-- Reset Button -->
+        <button class="btn-reset-queue" id="resetQueueBtn" title="Reset all names">R</button>
+      </div>
+
+      <!-- Queue list area -->
+      <div class="admin-queue-box">
+        <ul class="queue-list" id="adminQueueList">
+          <!-- Rendered dynamically -->
+        </ul>
+      </div>
+
+      <!-- Step Advance Button -->
+      <div class="admin-actions">
+        <button class="btn-next-step" id="nextStepBtn" title="Advance queue">&gt;</button>
+      </div>
+    </div>
+
+    <!-- Right Column: Widget Preview -->
+    <div class="admin-right">
+      <div class="widget-preview-label" id="previewLabel">widget preview</div>
+      
+      <div class="widget-container">
+        <!-- Widget UI -->
+        <div class="raika-widget-capsule" id="widgetCapsule">
+          <div class="widget-playing" id="widgetPlaying">
+            Playing With : <span class="widget-playing-name" id="widgetPlayingName">-</span>
+          </div>
+          <div class="widget-queue" id="widgetQueue">
+            Next Queue : <span class="widget-queue-names" id="widgetQueueNames">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal Overlay -->
+  <div class="modal-overlay" id="resetModal">
+    <div class="modal-box">
+      <div class="modal-title" id="modalText">ต้องการรีเซทรายชื่อคิวทั้งหมดจริงหรือไม่?</div>
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-confirm" id="confirmResetBtn">ยืนยันรีเซท</button>
+        <button class="btn-modal btn-modal-cancel" id="cancelResetBtn">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.io library from CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Control Logic script -->
+  <script src="control.js"></script>
+</body>
+</html>

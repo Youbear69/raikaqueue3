@@ -1,0 +1,629 @@
+@import url('https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg-color: #0b2507; /* Dark Forest Green from the screenshot */
+  --grid-color: rgba(22, 69, 14, 0.4);
+  --active-green: #39ff14; /* Neon green */
+  --playing-green: #2ecc71;
+  --playing-gradient-start: #27ae60;
+  --playing-gradient-end: #0b5327;
+  --warning-yellow: #f1c40f; /* Yellow */
+  --text-white: #ffffff;
+  --text-gray: #bdc3c7;
+  --input-border: #27ae60;
+  --input-bg: rgba(39, 174, 96, 0.2);
+  --danger-red: #e74c3c;
+  --badge-green: #27ae60;
+  
+  --font-family: 'Playpen Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+input, button, select, textarea {
+  font-family: var(--font-family);
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-white);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Grid Background */
+.grid-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Main Layout for Registration Page */
+.page-container {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+/* Header styling */
+header {
+  margin-bottom: 40px;
+  text-align: left;
+  max-width: 700px;
+}
+
+h1.main-title {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-white);
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: var(--text-white);
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* Character Image placement */
+.character-container {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  height: 90vh;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.character-img {
+  height: 100%;
+  max-height: 800px;
+  object-fit: contain;
+  object-position: bottom right;
+  opacity: 0.25;
+  filter: drop-shadow(-5px 5px 15px rgba(0,0,0,0.5));
+}
+
+/* Content wrapper (Left half of the screen) */
+.content-wrapper {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 550px;
+}
+
+/* Active Game Badge */
+.game-badge {
+  display: inline-block;
+  background-color: var(--badge-green);
+  color: var(--text-white);
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+/* Registration Form container */
+.register-form-container {
+  background-color: var(--input-bg);
+  border: 4px solid var(--input-border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+}
+
+.register-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-family);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-white);
+  text-align: center;
+}
+
+.register-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+}
+
+/* Queue List design */
+.queue-list {
+  list-style: none;
+  width: 100%;
+}
+
+.queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 10px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.queue-item:last-child {
+  border-bottom: none;
+}
+
+.queue-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.queue-time {
+  margin-left: auto;
+  padding-right: 15px;
+  font-weight: 600;
+}
+
+/* Color Coding for queue indexes */
+.color-playing {
+  color: var(--active-green) !important;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.color-played {
+  color: rgba(255, 255, 255, 0.3) !important;
+  text-shadow: none !important;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.color-normal {
+  color: var(--text-white);
+}
+
+.color-warn {
+  color: var(--warning-yellow) !important;
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+/* Delete button next to user's name */
+.btn-delete-queue {
+  background: transparent;
+  border: none;
+  color: var(--danger-red);
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.8;
+  z-index: 5;
+}
+
+.btn-delete-queue:hover {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------- */
+/* Control Panel Page Layout */
+/* ------------------------------------------------------------- */
+.admin-container {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 40px;
+  padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  z-index: 2;
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .admin-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-left, .admin-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-header-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+/* Game Title selector button dropdown */
+.game-selector-container {
+  position: relative;
+}
+
+.btn-game-toggle {
+  background-color: var(--badge-green);
+  color: var(--text-white);
+  border: none;
+  font-family: var(--font-family);
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-game-toggle:hover {
+  background-color: #219653;
+}
+
+.game-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1a4213;
+  border: 2px solid var(--badge-green);
+  border-radius: 4px;
+  margin-top: 5px;
+  list-style: none;
+  width: 250px;
+  z-index: 10;
+  display: none;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.game-dropdown-menu.show {
+  display: block;
+}
+
+.game-dropdown-item {
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.game-dropdown-item:hover {
+  background-color: var(--badge-green);
+}
+
+/* Reset Button "R" */
+.btn-reset-queue {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--badge-green);
+  color: var(--text-white);
+  font-family: var(--font-family);
+  font-size: 1.2rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-reset-queue:hover {
+  background-color: #219653;
+  transform: scale(1.05);
+}
+
+/* Admin Queue Box */
+.admin-queue-box {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  flex-grow: 1;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Action controls */
+.admin-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+}
+
+/* Next Button ">" */
+.btn-next-step {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--badge-green);
+  color: var(--text-white);
+  font-family: var(--font-family);
+  font-size: 1.8rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  padding-left: 4px; /* offset slightly to center arrow */
+}
+
+.btn-next-step:hover {
+  background-color: #219653;
+  transform: scale(1.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.btn-next-step:active {
+  transform: scale(0.95);
+}
+
+/* ------------------------------------------------------------- */
+/* OBS Widget Layout & Styling */
+/* ------------------------------------------------------------- */
+.widget-preview-label {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  opacity: 0.8;
+}
+
+.widget-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  flex-grow: 1;
+}
+
+/* The Green Capsule Widget */
+.raika-widget-capsule {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, var(--playing-gradient-start) 0%, var(--playing-gradient-end) 100%);
+  border: 4px solid var(--playing-green);
+  border-radius: 35px;
+  padding: 20px 45px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.widget-playing {
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: var(--text-white);
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.widget-playing-name {
+  color: var(--active-green);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.5), 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.widget-queue {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-white);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-queue-names {
+  color: var(--active-green);
+}
+
+/* Modal styles for confirmation dialog */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background-color: #163610;
+  border: 3px solid var(--badge-green);
+  border-radius: 8px;
+  padding: 25px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+}
+
+.modal-overlay.show .modal-box {
+  transform: scale(1);
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: var(--text-white);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn-modal {
+  padding: 8px 20px;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-modal-confirm {
+  background-color: var(--danger-red);
+  color: white;
+}
+
+.btn-modal-confirm:hover {
+  background-color: #c0392b;
+}
+
+.btn-modal-cancel {
+  background-color: var(--text-gray);
+  color: #333;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #95a5a6;
+}
+
+/* Animations */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pop-anim {
+  animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Widget Only Page Mode styling */
+.widget-only-body {
+  background-color: transparent !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  min-height: auto;
+  overflow: hidden;
+}
+
+.widget-only-body .raika-widget-capsule {
+  margin: 0;
+  animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Premium Widget Updates Animations */
+@keyframes capsule-update {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    border-color: var(--playing-green);
+  }
+  30% {
+    transform: scale(1.06);
+    box-shadow: 0 15px 35px rgba(57, 255, 20, 0.55);
+    border-color: var(--active-green);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    border-color: var(--playing-green);
+  }
+}
+
+.animate-capsule-update {
+  animation: capsule-update 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes text-slide-in {
+  0% {
+    transform: translateY(12px);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-text-slide {
+  display: inline-block;
+  animation: text-slide-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+

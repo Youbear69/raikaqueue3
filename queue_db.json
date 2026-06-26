@@ -1,0 +1,25 @@
+{
+  "queue": [
+    {
+      "id": "ho77l3jgzmqv6asvf",
+      "name": "saikai",
+      "time": "23:56",
+      "clientId": "client_ocolr2sc7kamqv5819l"
+    },
+    {
+      "id": "ph5vg8p4nmqv6ay5m",
+      "name": "panya nirangul",
+      "time": "23:56",
+      "clientId": "client_ocolr2sc7kamqv5819l"
+    },
+    {
+      "id": "adk5xj4i1mqv6biu6",
+      "name": "jing",
+      "time": "23:56",
+      "clientId": "client_ocolr2sc7kamqv5819l"
+    }
+  ],
+  "activeGame": "Yu-Gi-Oh! Master Duel",
+  "isPlayingActive": false,
+  "currentPlayingIndex": 2
+}
