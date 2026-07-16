@@ -16,7 +16,8 @@ let state = {
   queue: [],
   activeGame: 'Cardfight Vanguard DD2',
   isPlayingActive: false,
-  currentPlayingIndex: -1
+  currentPlayingIndex: -1,
+  queueLimit: 0
 };
 
 // Helper: Load State
@@ -30,7 +31,8 @@ function loadState() {
           queue: parsed.queue,
           activeGame: parsed.activeGame || 'Cardfight Vanguard DD2',
           isPlayingActive: !!parsed.isPlayingActive,
-          currentPlayingIndex: typeof parsed.currentPlayingIndex === 'number' ? parsed.currentPlayingIndex : -1
+          currentPlayingIndex: typeof parsed.currentPlayingIndex === 'number' ? parsed.currentPlayingIndex : -1,
+          queueLimit: typeof parsed.queueLimit === 'number' ? parsed.queueLimit : 0
         };
       }
     }
@@ -79,7 +81,8 @@ function broadcastState() {
     queue: getSanitizedQueue(),
     activeGame: state.activeGame,
     isPlayingActive: state.isPlayingActive,
-    currentPlayingIndex: state.currentPlayingIndex
+    currentPlayingIndex: state.currentPlayingIndex,
+    queueLimit: state.queueLimit
   });
 }
 
@@ -92,12 +95,19 @@ io.on('connection', (socket) => {
     queue: getSanitizedQueue(),
     activeGame: state.activeGame,
     isPlayingActive: state.isPlayingActive,
-    currentPlayingIndex: state.currentPlayingIndex
+    currentPlayingIndex: state.currentPlayingIndex,
+    queueLimit: state.queueLimit
   });
 
   // Client requests to register in the queue
   socket.on('register_queue', ({ name, clientId }) => {
     if (!name || typeof name !== 'string' || name.trim() === '') return;
+
+    // Check if queue limit is exceeded
+    if (state.queueLimit > 0 && state.queue.length >= state.queueLimit) {
+      socket.emit('registration_error', 'คิวเต็มแล้ว ไม่สามารถลงทะเบียนเพิ่มได้');
+      return;
+    }
     
     // Get Bangkok time (UTC+7)
     const now = new Date();
@@ -116,10 +126,11 @@ io.on('connection', (socket) => {
 
     state.queue.push(newItem);
     saveState();
-    broadcastState();
     
-    // Send back the ID of the item this specific client registered
+    // Send back the ID of the item this specific client registered first
     socket.emit('registration_success', newItem.id);
+    
+    broadcastState();
   });
 
   // Client requests to delete their own queue item
@@ -174,6 +185,16 @@ io.on('connection', (socket) => {
   socket.on('admin_change_game', (newGame) => {
     if (newGame === 'Cardfight Vanguard DD2' || newGame === 'Yu-Gi-Oh! Master Duel') {
       state.activeGame = newGame;
+      saveState();
+      broadcastState();
+    }
+  });
+
+  // Admin: Change queue limit
+  socket.on('admin_change_limit', (newLimit) => {
+    const limit = parseInt(newLimit, 10);
+    if (!isNaN(limit) && limit >= 0) {
+      state.queueLimit = limit;
       saveState();
       broadcastState();
     }

@@ -38,11 +38,34 @@ socket.on('registration_success', (itemId) => {
   }
 });
 
+// Listen for registration error from server
+socket.on('registration_error', (message) => {
+  alert(message);
+});
+
 // Listen for real-time state updates from the server
-socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex }) => {
+socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex, queueLimit }) => {
   // Update Game Badge
   if (activeGameBadge) {
     activeGameBadge.textContent = activeGame;
+  }
+
+  // Update Input field status based on limit
+  if (usernameInput) {
+    if (queueLimit > 0) {
+      const currentCount = queue.length;
+      if (currentCount >= queueLimit) {
+        usernameInput.disabled = true;
+        usernameInput.placeholder = `คิวเต็มแล้ว (${currentCount}/${queueLimit})`;
+        usernameInput.value = '';
+      } else {
+        usernameInput.disabled = false;
+        usernameInput.placeholder = `ชื่อในเกม (จำกัด ${queueLimit} คิว - ขณะนี้ ${currentCount}/${queueLimit})`;
+      }
+    } else {
+      usernameInput.disabled = false;
+      usernameInput.placeholder = 'ชื่อในเกม';
+    }
   }
 
   // Update Queue List
@@ -69,7 +92,7 @@ socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingI
       // Determine text color based on queue index and currentPlayingIndex
       let colorClass = 'color-normal';
       const isPlayed = index < currentPlayingIndex || (index === currentPlayingIndex && !isPlayingActive);
-      
+
       if (isPlayed) {
         colorClass = 'color-played'; // Faded gray for previously played
       } else if (index === currentPlayingIndex && isPlayingActive) {
@@ -84,7 +107,7 @@ socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingI
       // Container for index & name
       const infoDiv = document.createElement('div');
       infoDiv.className = `queue-info ${colorClass}`;
-      
+
       const textSpan = document.createElement('span');
       textSpan.textContent = `${displayIndex} : ${item.name}`;
       infoDiv.appendChild(textSpan);
@@ -107,7 +130,7 @@ socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingI
           e.stopPropagation();
           // Emit delete event to server
           socket.emit('delete_queue', { id: item.id, clientId });
-          
+
           // Remove from local storage list
           myQueueIds = myQueueIds.filter(id => id !== item.id);
           saveMyQueues();

@@ -8,6 +8,8 @@ const gameDropdownMenu = document.getElementById('gameDropdownMenu');
 const resetQueueBtn = document.getElementById('resetQueueBtn');
 const adminQueueList = document.getElementById('adminQueueList');
 const nextStepBtn = document.getElementById('nextStepBtn');
+const limitInput = document.getElementById('limitInput');
+const resetLimitBtn = document.getElementById('resetLimitBtn');
 
 // Widget Preview Elements
 const widgetPlayingName = document.getElementById('widgetPlayingName');
@@ -61,10 +63,36 @@ nextStepBtn.addEventListener('click', () => {
   socket.emit('admin_next');
 });
 
+// Limit input handlers
+if (limitInput) {
+  limitInput.addEventListener('input', () => {
+    const val = parseInt(limitInput.value, 10);
+    if (!isNaN(val) && val >= 0) {
+      socket.emit('admin_change_limit', val);
+    } else if (limitInput.value === '') {
+      socket.emit('admin_change_limit', 0);
+    }
+  });
+}
+
+if (resetLimitBtn) {
+  resetLimitBtn.addEventListener('click', () => {
+    socket.emit('admin_change_limit', 0);
+    if (limitInput) {
+      limitInput.value = 0;
+    }
+  });
+}
+
 // Listen for state updates from the server
-socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex }) => {
+socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex, queueLimit }) => {
   // 1. Update Game Display
   currentGameText.textContent = activeGame;
+
+  // Update Limit Input (if not active typing)
+  if (limitInput && document.activeElement !== limitInput) {
+    limitInput.value = queueLimit !== undefined ? queueLimit : 0;
+  }
 
   // 2. Render Admin Queue List
   adminQueueList.innerHTML = '';
