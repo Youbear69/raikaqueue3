@@ -17,6 +17,12 @@ const widgetPlaying = document.getElementById('widgetPlaying');
 const widgetQueueNames = document.getElementById('widgetQueueNames');
 const widgetCapsule = document.getElementById('widgetCapsule');
 
+// List Widget Preview Elements
+const previewListBox = document.getElementById('previewListBox');
+const previewListTitle = document.getElementById('previewListTitle');
+const previewListRows = document.getElementById('previewListRows');
+const listOpacitySlider = document.getElementById('listOpacitySlider');
+
 // Confirmation Modal Elements
 const resetModal = document.getElementById('resetModal');
 const confirmResetBtn = document.getElementById('confirmResetBtn');
@@ -84,8 +90,40 @@ if (resetLimitBtn) {
   });
 }
 
+// List widget opacity slider
+if (listOpacitySlider) {
+  listOpacitySlider.addEventListener('input', () => {
+    socket.emit('admin_change_list_opacity', listOpacitySlider.value / 100);
+  });
+}
+
+// Copy widget URL buttons
+document.querySelectorAll('.btn-copy-url').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const url = (window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin) + btn.dataset.url;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      // Fallback for older browsers / non-secure contexts
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    const originalText = btn.textContent;
+    btn.textContent = 'คัดลอกแล้ว ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+});
+
 // Listen for state updates from the server
-socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex, queueLimit }) => {
+socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingIndex, queueLimit, listOpacity }) => {
   // 1. Update Game Display
   currentGameText.textContent = activeGame;
 
@@ -155,6 +193,16 @@ socket.on('state_update', ({ queue, activeGame, isPlayingActive, currentPlayingI
 
       adminQueueList.appendChild(li);
     });
+  }
+
+  // 2.5 Update List Widget Preview
+  previewListTitle.textContent = activeGame;
+  renderListWidgetRows(previewListRows, { queue, isPlayingActive, currentPlayingIndex });
+  if (typeof listOpacity === 'number') {
+    previewListBox.style.backgroundColor = `rgba(0, 0, 0, ${listOpacity})`;
+    if (listOpacitySlider && document.activeElement !== listOpacitySlider) {
+      listOpacitySlider.value = Math.round(listOpacity * 100);
+    }
   }
 
   // 3. Update Widget Preview

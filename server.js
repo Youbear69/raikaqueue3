@@ -17,7 +17,8 @@ let state = {
   activeGame: 'Cardfight Vanguard DD2',
   isPlayingActive: false,
   currentPlayingIndex: -1,
-  queueLimit: 0
+  queueLimit: 0,
+  listOpacity: 0.55
 };
 
 // Helper: Load State
@@ -32,7 +33,8 @@ function loadState() {
           activeGame: parsed.activeGame || 'Cardfight Vanguard DD2',
           isPlayingActive: !!parsed.isPlayingActive,
           currentPlayingIndex: typeof parsed.currentPlayingIndex === 'number' ? parsed.currentPlayingIndex : -1,
-          queueLimit: typeof parsed.queueLimit === 'number' ? parsed.queueLimit : 0
+          queueLimit: typeof parsed.queueLimit === 'number' ? parsed.queueLimit : 0,
+          listOpacity: typeof parsed.listOpacity === 'number' ? parsed.listOpacity : 0.55
         };
       }
     }
@@ -65,6 +67,9 @@ app.get('/control', (req, res) => {
 app.get('/widget', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'widget.html'));
 });
+app.get('/widget-list', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'widget-list.html'));
+});
 
 // Helper: Get sanitized queue (removes clientId for privacy)
 function getSanitizedQueue() {
@@ -82,7 +87,8 @@ function broadcastState() {
     activeGame: state.activeGame,
     isPlayingActive: state.isPlayingActive,
     currentPlayingIndex: state.currentPlayingIndex,
-    queueLimit: state.queueLimit
+    queueLimit: state.queueLimit,
+    listOpacity: state.listOpacity
   });
 }
 
@@ -96,7 +102,8 @@ io.on('connection', (socket) => {
     activeGame: state.activeGame,
     isPlayingActive: state.isPlayingActive,
     currentPlayingIndex: state.currentPlayingIndex,
-    queueLimit: state.queueLimit
+    queueLimit: state.queueLimit,
+    listOpacity: state.listOpacity
   });
 
   // Client requests to register in the queue
@@ -195,6 +202,16 @@ io.on('connection', (socket) => {
     const limit = parseInt(newLimit, 10);
     if (!isNaN(limit) && limit >= 0) {
       state.queueLimit = limit;
+      saveState();
+      broadcastState();
+    }
+  });
+
+  // Admin: Change list widget background opacity (0-1)
+  socket.on('admin_change_list_opacity', (value) => {
+    const v = parseFloat(value);
+    if (!isNaN(v) && v >= 0 && v <= 1) {
+      state.listOpacity = v;
       saveState();
       broadcastState();
     }

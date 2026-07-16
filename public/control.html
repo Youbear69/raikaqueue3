@@ -53,8 +53,11 @@
 
     <!-- Right Column: Widget Preview -->
     <div class="admin-right">
-      <div class="widget-preview-label" id="previewLabel">widget preview</div>
-      
+      <div class="widget-preview-label" id="previewLabel">
+        widget preview
+        <button class="btn-copy-url" data-url="/widget" title="คัดลอก URL สำหรับ OBS">คัดลอก URL</button>
+      </div>
+
       <div class="widget-container">
         <!-- Widget UI -->
         <div class="raika-widget-capsule" id="widgetCapsule">
@@ -64,6 +67,20 @@
           <div class="widget-queue" id="widgetQueue">
             Next Queue : <span class="widget-queue-names" id="widgetQueueNames">-</span>
           </div>
+        </div>
+      </div>
+
+      <div class="widget-preview-label">
+        list widget preview
+        <button class="btn-copy-url" data-url="/widget-list" title="คัดลอก URL สำหรับ OBS">คัดลอก URL</button>
+        <input type="range" id="listOpacitySlider" class="opacity-slider" min="0" max="100" value="55" title="ความทึบพื้นหลัง widget">
+      </div>
+
+      <div class="widget-container">
+        <!-- List Widget UI -->
+        <div class="raika-widget-list" id="previewListBox">
+          <div class="lw-title" id="previewListTitle">Queue</div>
+          <ul class="lw-rows" id="previewListRows"></ul>
         </div>
       </div>
     </div>
@@ -82,7 +99,8 @@
 
   <!-- Socket.io library from CDN -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <!-- Control Logic script -->
+  <!-- Shared list renderer + Control Logic script -->
+  <script src="list-widget.js"></script>
   <script src="control.js"></script>
 </body>
 </html>

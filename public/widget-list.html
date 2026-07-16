@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raika Card List Widget</title>
+  <meta name="description" content="วิดเจตแสดงรายชื่อคิวแบบลิสต์สำหรับ OBS Stream Overlay - Kerori Raika">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="widget-only-body">
+  <!-- List Widget -->
+  <div class="raika-widget-list" id="obsListBox">
+    <div class="lw-title" id="obsListTitle">Queue</div>
+    <ul class="lw-rows" id="obsListRows"></ul>
+  </div>
+
+  <!-- Socket.io library from CDN (supports loading via file:// protocol) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Shared list renderer + Widget Logic -->
+  <script src="list-widget.js"></script>
+  <script src="widget-list.js"></script>
+</body>
+</html>
