@@ -236,6 +236,7 @@
 
 .sched-panel.open {
   transform: translateX(0);
+  z-index: 7;
 }
 
 .sched-img {
