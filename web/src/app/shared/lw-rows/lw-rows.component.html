@@ -1,0 +1,11 @@
+<ul class="lw-rows">
+  @if (visible().length === 0) {
+    <li class="lw-row lw-empty">- ไม่มีคิว -</li>
+  }
+  @for (v of visible(); track v.item.id) {
+    <li class="lw-row" [class.color-playing]="v.item.status === 'playing'">
+      <span class="lw-name">{{ v.number }}) {{ v.item.name }}</span>
+      <span class="lw-time">{{ v.item.time }}</span>
+    </li>
+  }
+</ul>

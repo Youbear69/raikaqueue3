@@ -1,0 +1,29 @@
+.login-box {
+  position: relative;
+  z-index: 2;
+  max-width: 420px;
+  margin: 20vh auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px;
+}
+
+.btn-google {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-white);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.btn-google:hover {
+  background: var(--badge-green);
+}
+
+.login-email {
+  color: var(--text-gray);
+}

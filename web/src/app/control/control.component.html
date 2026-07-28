@@ -1,0 +1,214 @@
+<div class="ctl-grid">
+  <section class="a-card">
+    <div class="a-card-head">
+      <div class="game-selector-container">
+        <button class="btn-game-toggle" (click)="toggleDropdown($event)">
+          <span>{{ svc.settings().activeGame }}</span>
+          <span>▼</span>
+        </button>
+        <ul class="game-dropdown-menu" [class.show]="dropdownOpen()">
+          @for (g of svc.gameNames(); track g) {
+            <li class="game-dropdown-item" (click)="selectGame(g)">{{ g }}</li>
+          }
+        </ul>
+      </div>
+
+      <div class="limit-container">
+        <input
+          #limitInput
+          type="number"
+          class="limit-input"
+          placeholder="จำกัดคิว"
+          min="0"
+          [value]="svc.settings().queueLimit"
+          (input)="onLimit(limitInput.value)"
+        />
+        <button
+          class="btn-limit-reset"
+          title="ยกเลิกการจำกัดคิว (Unlimit)"
+          (click)="svc.setQueueLimit(0); limitInput.value = '0'"
+        >
+          0
+        </button>
+      </div>
+
+      <button class="btn-reset-queue" title="Reset all names" (click)="showResetModal.set(true)">
+        R
+      </button>
+    </div>
+
+    <div class="wr-filter">
+      @for (g of svc.gameNames(); track g) {
+        <label class="wr-filter-item">
+          <input type="checkbox" [checked]="wrChecked(g)" (change)="svc.toggleWrGame(g)" />
+          {{ g }}
+        </label>
+      }
+      <label class="wr-filter-item">
+        <input
+          type="checkbox"
+          [checked]="!!svc.settings().showHands"
+          (change)="svc.setShowHands(!svc.settings().showHands)"
+        />
+        แสดงมือถือ card (เมื่อโชว์เกมเดียว)
+      </label>
+    </div>
+
+    <div class="wr-row">
+      @for (g of svc.visibleWrGames(); track g) {
+        <div class="wr-card" [class.active]="g === svc.settings().activeGame">
+          <div class="wr-head">
+            <span class="wr-name">{{ g }}</span>
+            <span class="wr-badge">
+              WR: {{ svc.statsFor(g).pct }} ({{ svc.statsFor(g).win }}/{{ svc.statsFor(g).total }})
+            </span>
+          </div>
+          <div class="wr-boxes">
+            <div class="wr-box win">
+              <span class="wr-label">WIN</span>
+              <div class="wr-ctrl">
+                <button (click)="svc.adjustWinrate(g, 'win', -1)">-</button>
+                <span class="wr-num">{{ svc.statsFor(g).win }}</span>
+                <button (click)="svc.adjustWinrate(g, 'win', 1)">+</button>
+              </div>
+            </div>
+            <div class="wr-box lose">
+              <span class="wr-label">LOSE</span>
+              <div class="wr-ctrl">
+                <button (click)="svc.adjustWinrate(g, 'lose', -1)">-</button>
+                <span class="wr-num">{{ svc.statsFor(g).lose }}</span>
+                <button (click)="svc.adjustWinrate(g, 'lose', 1)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <ul class="queue-list ctl-list">
+      @if (svc.rows().length === 0) {
+        <li class="queue-item color-normal" style="justify-content:center;font-size:1.3rem;opacity:0.6">
+          ไม่มีคิวในขณะนี้
+        </li>
+      }
+      @for (row of svc.rows(); track row.item.id; let i = $index) {
+        <li class="queue-item pop-anim" [style.animationDelay]="i * 0.03 + 's'">
+          <div class="queue-info {{ row.colorClass }}">
+            <span>{{ i + 1 }} : {{ row.item.name }}</span>
+            @if (svc.statsForUser(row.item.uid, svc.settings().activeGame); as s) {
+              <span class="q-wr">WR {{ s.pct }} ({{ s.win }}/{{ s.total }})</span>
+            }
+            @if (row.item.photo) {
+              <img
+                class="q-photo"
+                [src]="row.item.photo"
+                referrerpolicy="no-referrer"
+                alt=""
+                title="กดเพื่อดูรูปเต็ม"
+                (click)="viewPhoto.set(row.item.photo!)"
+              />
+            }
+          </div>
+          <span class="queue-time {{ row.colorClass }}">{{ row.item.time }}</span>
+          @if (row.item.status === 'playing') {
+            <button
+              class="q-res win"
+              title="{{ row.item.name }} ชนะ (Raika แพ้)"
+              (click)="pendingResult.set({ item: row.item, result: 'win' })"
+            >
+              W
+            </button>
+            <button
+              class="q-res lose"
+              title="{{ row.item.name }} แพ้ (Raika ชนะ)"
+              (click)="pendingResult.set({ item: row.item, result: 'lose' })"
+            >
+              L
+            </button>
+          }
+          <button
+            class="btn-delete-queue"
+            title="ลบคิวของ {{ row.item.name }}"
+            (click)="svc.deleteItem(row.item.id)"
+          >
+            ×
+          </button>
+        </li>
+      }
+    </ul>
+
+    <button class="btn-next-step ctl-next" title="Advance queue" (click)="svc.next()">&gt;</button>
+  </section>
+
+  <div class="ctl-side">
+    <section class="a-card">
+      <div class="a-card-title">
+        widget preview
+        <button class="btn-copy-url" (click)="copyUrl('/widget', $event)">คัดลอก URL</button>
+      </div>
+      <div class="ctl-preview">
+        <widget-capsule />
+      </div>
+    </section>
+
+    <section class="a-card">
+      <div class="a-card-title">
+        list widget preview
+        <button class="btn-copy-url" (click)="copyUrl('/widget-list', $event)">คัดลอก URL</button>
+        <input
+          type="range"
+          class="opacity-slider"
+          min="0"
+          max="100"
+          title="ความทึบพื้นหลัง widget"
+          [value]="svc.settings().listOpacity * 100"
+          (input)="onOpacity($event)"
+        />
+      </div>
+      <div class="ctl-preview">
+        <div
+          class="raika-widget-list"
+          [style.backgroundColor]="'rgba(0, 0, 0, ' + svc.settings().listOpacity + ')'"
+        >
+          <div class="lw-title">{{ svc.settings().activeGame }}</div>
+          <lw-rows />
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+@if (pendingResult(); as p) {
+  <div class="modal-overlay show">
+    <div class="modal-box">
+      <div class="modal-title">
+        ยืนยัน: {{ p.item.name }} {{ p.result === 'win' ? 'ชนะ' : 'แพ้' }} ({{ svc.settings().activeGame }})?
+      </div>
+      @if (p.item.status === 'playing') {
+        <div class="modal-note">บันทึกแล้วคิวจะเลื่อนไปคนถัดไปอัตโนมัติ</div>
+      }
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-confirm" (click)="confirmResult()">ยืนยัน</button>
+        <button class="btn-modal btn-modal-cancel" (click)="pendingResult.set(null)">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (viewPhoto(); as p) {
+  <div class="photo-lightbox" (click)="viewPhoto.set(null)">
+    <img [src]="p" referrerpolicy="no-referrer" alt="" />
+  </div>
+}
+
+<div class="modal-overlay" [class.show]="showResetModal()">
+  <div class="modal-box">
+    <div class="modal-title">ต้องการรีเซทรายชื่อคิวทั้งหมดจริงหรือไม่?</div>
+    <div class="modal-buttons">
+      <button class="btn-modal btn-modal-confirm" (click)="svc.reset(); showResetModal.set(false)">
+        ยืนยันรีเซท
+      </button>
+      <button class="btn-modal btn-modal-cancel" (click)="showResetModal.set(false)">ยกเลิก</button>
+    </div>
+  </div>
+</div>

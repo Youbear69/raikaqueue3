@@ -1,0 +1,151 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 210px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 12px;
+  z-index: 5;
+}
+
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-white);
+  text-decoration: none;
+  font-size: 1.15rem;
+  font-weight: 800;
+  padding: 4px 8px;
+}
+
+.sb-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sb-nav a,
+.sb-link-home {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-gray);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 11px 12px;
+  border-radius: 9px;
+}
+
+.sb-nav a:hover,
+.sb-link-home:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-white);
+}
+
+.sb-nav a.active {
+  background: var(--input-bg);
+  color: var(--active-green);
+}
+
+.sb-icon {
+  width: 19px;
+  height: 19px;
+  flex: none;
+}
+
+.sb-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(39, 174, 96, 0.35);
+  padding-top: 12px;
+}
+
+.sb-user {
+  color: var(--text-gray);
+  font-size: 0.85rem;
+  padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-logout {
+  margin: 0 8px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--danger-red);
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--text-white);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.sb-logout:hover {
+  background: var(--danger-red);
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding: 24px 28px;
+  max-width: 1450px;
+  overflow-y: auto;
+}
+
+/* Narrow screens: sidebar becomes a top bar */
+@media (max-width: 760px) {
+  :host {
+    height: auto;
+    overflow: visible;
+  }
+  .admin-shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    height: auto;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid rgba(39, 174, 96, 0.35);
+  }
+  .sb-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sb-bottom {
+    border-top: none;
+    padding-top: 0;
+    flex-direction: row;
+    align-items: center;
+  }
+  .sb-user {
+    display: none;
+  }
+}

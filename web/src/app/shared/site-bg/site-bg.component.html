@@ -1,0 +1,16 @@
+<div class="grid-overlay"></div>
+
+@if (ui.bgVisible()) {
+  <div class="pattern" [style.--travel]="travel + 'px'">
+    @for (t of bgTiles; track $index) {
+      <img
+        class="pattern-tile"
+        [src]="'assets/' + t.img"
+        [style.left.px]="t.x"
+        [style.top.px]="t.y"
+        [style.animationDelay]="t.delay + 's'"
+        alt=""
+      />
+    }
+  </div>
+}

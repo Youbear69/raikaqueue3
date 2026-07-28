@@ -1,0 +1,35 @@
+{
+  "rules": {
+    ".read": true,
+
+    "queue": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()",
+      "$id": {
+        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('uid').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['name', 'time', 'uid', 'status']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 25 && (newData.child('status').val() === 'waiting' || (auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()))"
+      }
+    },
+
+    "settings": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "games": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "history": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "terms": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "winrate": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "userStats": {
+      ".write": "auth != null && auth.token.email != null && root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists()"
+    },
+    "adminEmails": {
+      ".write": "auth != null && auth.token.email != null && (root.child('adminEmails').child(auth.token.email.toLowerCase().replace('.', ',')).exists() || !root.child('adminEmails').exists())"
+    }
+  }
+}

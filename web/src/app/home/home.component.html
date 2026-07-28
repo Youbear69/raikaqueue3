@@ -1,0 +1,133 @@
+<site-bg />
+<site-nav />
+
+<div class="upper">
+<div class="landing">
+<main class="hero">
+  <h1 class="hero-title">{{ svc.settings().siteTitle || 'Kerori Raika' }}</h1>
+  <p class="hero-tagline">{{ svc.settings().tagline || ui.t().tagline }}</p>
+  <div class="hero-buttons">
+    <a routerLink="/register" class="hero-btn primary">{{ ui.t().joinQueue }}</a>
+  </div>
+</main>
+
+<div
+  class="char-stack"
+  [style.--char-url]="'url(' + img() + ')'"
+  [style.--mx]="mx()"
+  [style.--my]="my()"
+>
+  <div class="char-layer layer-3"></div>
+  <div class="char-layer layer-2"></div>
+  <img class="char-front" [src]="img()" alt="Kerori Raika" />
+</div>
+
+@if (schedule(); as sc) {
+  <div class="sched-panel" [class.open]="schedOpen()">
+    <img
+      class="sched-img"
+      [src]="sc.img"
+      referrerpolicy="no-referrer"
+      alt="Schedule Week"
+      (click)="viewPost.set(sc.img)"
+    />
+    <button class="sched-tab" (click)="schedOpen.set(!schedOpen())">
+      <svg
+        viewBox="0 0 24 24"
+        class="sched-arrow"
+        [class.open]="schedOpen()"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+      >
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      <span class="sched-label">Schedule Week</span>
+    </button>
+  </div>
+}
+
+<footer class="home-footer">Since 2026 @ Kerori Raika</footer>
+</div>
+
+<section class="clips-section">
+  <div class="clips-head">
+    <h2>{{ ui.t().latestClips }}</h2>
+    @if (subs() !== null) {
+      <a
+        class="hero-subs"
+        href="https://www.youtube.com/@keroriRaika"
+        target="_blank"
+        rel="noopener"
+      >
+        <svg viewBox="0 0 24 24" class="subs-icon" fill="currentColor">
+          <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z" />
+        </svg>
+        {{ subsText() }}
+      </a>
+    }
+    <a
+      href="https://www.youtube.com/@keroriRaika"
+      target="_blank"
+      rel="noopener"
+      class="yt-link"
+    >{{ ui.t().openChannel }}</a>
+  </div>
+
+  @if (clips().length) {
+    <div class="clips-grid">
+      @for (c of clips(); track c.id) {
+        <a
+          class="clip-card"
+          [href]="'https://www.youtube.com/watch?v=' + c.id"
+          target="_blank"
+          rel="noopener"
+        >
+          <img class="clip-thumb" [src]="'https://i.ytimg.com/vi/' + c.id + '/hqdefault.jpg'" alt="" />
+          <div class="clip-title">{{ c.title }}</div>
+        </a>
+      }
+    </div>
+  } @else {
+    <iframe
+      class="yt-frame"
+      src="https://www.youtube.com/embed/videoseries?list=UUjnKbgxO0tCXzNlSsnYjdyg"
+      title="Kerori Raika - latest videos"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  }
+</section>
+
+@if (post(); as ps) {
+  <section class="clips-section post-section">
+    <div class="clips-head">
+      <h2>{{ ui.t().latestPost }}</h2>
+      <a
+        class="yt-link"
+        [href]="'https://www.youtube.com/post/' + ps.id"
+        target="_blank"
+        rel="noopener"
+      >{{ ui.t().openPost }}</a>
+    </div>
+    <div class="post-body">
+      @if (ps.img) {
+        <img
+          class="post-img"
+          [src]="ps.img"
+          referrerpolicy="no-referrer"
+          alt=""
+          (click)="viewPost.set(ps.img)"
+        />
+      }
+      <p class="post-text">{{ ps.text }}</p>
+    </div>
+  </section>
+}
+
+@if (viewPost(); as vp) {
+  <div class="photo-lightbox" (click)="viewPost.set(null)">
+    <img [src]="vp" alt="" />
+  </div>
+}
+</div>

@@ -1,26 +1,45 @@
-name: Node.js CI
+name: Build and Deploy to Firebase Hosting
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ["main", "feature/angular-firebase"]
+    paths:
+      - "web/**"
+      - "firebase.json"
+      - "database.rules.json"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-    
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-        
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      # firebase-config.ts is gitignored - recreate it from the repo secret
+      - name: Write firebase-config.ts
+        run: printf '%s' "$FIREBASE_WEB_CONFIG" > web/src/app/firebase-config.ts
+        env:
+          FIREBASE_WEB_CONFIG: ${{ secrets.FIREBASE_WEB_CONFIG }}
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Run Build
-        run: npm run build --if-present
+        working-directory: web
+
+      - name: Build
+        run: npx ng build
+        working-directory: web
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RAIKAQUEUE }}
+          channelId: live
+          projectId: raikaqueue

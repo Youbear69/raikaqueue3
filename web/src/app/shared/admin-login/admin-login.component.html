@@ -1,0 +1,10 @@
+<div class="login-box">
+  @if (!svc.user()?.email) {
+    <h2>สำหรับแอดมิน</h2>
+    <button class="btn-google" (click)="svc.loginGoogle()">Sign in with Google</button>
+  } @else {
+    <h2>บัญชีนี้ไม่มีสิทธิ์แอดมิน</h2>
+    <div class="login-email">{{ svc.user()?.email }}</div>
+    <button class="btn-google" (click)="svc.logout()">ออกจากระบบ</button>
+  }
+</div>

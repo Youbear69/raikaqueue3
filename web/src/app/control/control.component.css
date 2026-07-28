@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.ctl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.a-card {
+  border: 1px solid rgba(39, 174, 96, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.a-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.a-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--text-gray);
+  font-size: 1.05rem;
+}
+
+/* Checkboxes choosing which games' win-rate cards are visible */
+.wr-filter {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.wr-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-gray);
+  cursor: pointer;
+}
+
+.ctl-list {
+  max-height: 56vh;
+  overflow-y: auto;
+  min-height: 200px;
+}
+
+.ctl-next {
+  align-self: center;
+}
+
+.ctl-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ctl-preview {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+@media (max-width: 1100px) {
+  .ctl-grid {
+    grid-template-columns: 1fr;
+  }
+}

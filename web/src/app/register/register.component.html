@@ -1,0 +1,208 @@
+<site-bg />
+<site-nav />
+
+<main class="reg-page">
+  <header class="reg-head">
+    <h1 class="reg-title">ลงชื่อรอเล่น (ตบ)</h1>
+    <div class="reg-sub">กับ Kerori Raika</div>
+    <div class="game-badge">{{ svc.settings().activeGame }}</div>
+  </header>
+
+  <form class="reg-form" (submit)="submit($event, nameInput)">
+    <input
+      #nameInput
+      type="text"
+      class="register-input"
+      [placeholder]="placeholder()"
+      maxlength="25"
+      required
+      autocomplete="off"
+      [disabled]="isFull()"
+    />
+  </form>
+
+  <section class="reg-card">
+    <ul class="queue-list">
+      @if (svc.rows().length === 0) {
+        <li class="queue-item color-normal" style="justify-content:center;font-size:1.3rem;opacity:0.6">
+          ยังไม่มีคิวในขณะนี้
+        </li>
+      }
+      @for (row of svc.rows(); track row.item.id; let i = $index) {
+        <li class="queue-item pop-anim" [style.animationDelay]="i * 0.05 + 's'">
+          <div class="queue-info {{ row.colorClass }}">
+            <span>{{ i + 1 }} : {{ row.item.name }}</span>
+            @if (svc.statsForUser(row.item.uid, svc.settings().activeGame); as s) {
+              <span class="q-wr">WR {{ s.pct }} ({{ s.win }}/{{ s.total }})</span>
+            }
+            @if (row.item.photo) {
+              <img
+                class="q-photo"
+                [src]="row.item.photo"
+                referrerpolicy="no-referrer"
+                alt=""
+                title="กดเพื่อดูรูปเต็ม"
+                (click)="viewPhoto.set(row.item.photo!)"
+              />
+            }
+          </div>
+          <span class="queue-time {{ row.colorClass }}">{{ row.item.time }}</span>
+          @if (row.item.uid === svc.user()?.uid) {
+            <button class="btn-delete-queue" title="ลบคิวของคุณ" (click)="svc.deleteItem(row.item.id)">
+              ×
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+</main>
+
+@if (regModal()) {
+  <div class="modal-overlay show">
+    <div class="modal-box reg-modal">
+      <div class="modal-title">ยืนยันการลงคิว: {{ pendingName() }}</div>
+
+      @if (svc.user()?.email) {
+      <div class="rm-photo-row">
+        <div class="rm-preview">
+          @if (previewUrl(); as p) {
+            <img [src]="p" referrerpolicy="no-referrer" alt="" />
+          } @else {
+            <span class="rm-nopic">ไม่แสดงรูป</span>
+          }
+        </div>
+        <div class="rm-options">
+          <label>
+            <input
+              type="radio"
+              name="photoMode"
+              [checked]="photoMode() === 'google'"
+              [disabled]="!svc.user()?.photoURL"
+              (change)="photoMode.set('google')"
+            />
+            รูปโปรไฟล์ Google
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="photoMode"
+              [checked]="photoMode() === 'url'"
+              (change)="photoMode.set('url')"
+            />
+            ใช้รูปจาก URL
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="photoMode"
+              [checked]="photoMode() === 'none'"
+              (change)="photoMode.set('none')"
+            />
+            ไม่แสดงรูป
+          </label>
+          @if (photoMode() === 'url') {
+            <input
+              class="rm-url"
+              type="url"
+              placeholder="https://..."
+              [value]="customUrl()"
+              (input)="onUrlInput($any($event.target).value)"
+            />
+            @switch (urlState()) {
+              @case ('loading') {
+                <span class="rm-url-status">กำลังเช็ครูป...</span>
+              }
+              @case ('ok') {
+                <span class="rm-url-status ok">รูปใช้ได้</span>
+              }
+              @case ('bad') {
+                <span class="rm-url-status bad">โหลดรูปไม่ได้ ใช้ URL อื่น</span>
+              }
+            }
+          }
+        </div>
+      </div>
+      }
+
+      @if (svc.terms().length) {
+        <div class="rm-terms">
+          <div class="rm-terms-title">
+            ข้อตกลง (ต้องยอมรับทุกข้อ)
+            <button type="button" class="rm-accept-all" (click)="acceptAllTerms()">ยอมรับทุกข้อ</button>
+          </div>
+          @for (t of svc.terms(); track t.id) {
+            <label class="rm-term">
+              <input
+                type="checkbox"
+                [checked]="checkedTerms().has(t.id)"
+                (change)="toggleTerm(t.id)"
+              />
+              {{ t.text }}
+            </label>
+          }
+        </div>
+      }
+
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-confirm" [disabled]="!canConfirm()" (click)="confirmRegister()">
+          ยืนยัน
+        </button>
+        <button class="btn-modal btn-modal-cancel" (click)="regModal.set(false)">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (viewPhoto(); as p) {
+  <div class="photo-lightbox" (click)="viewPhoto.set(null)">
+    <img [src]="p" referrerpolicy="no-referrer" alt="" />
+  </div>
+}
+
+<div class="character-container">
+  <div class="char-wrap">
+    <span class="char-solid"></span>
+    <img src="assets/raika_1.png" alt="Kerori Raika Character" class="character-img" />
+  </div>
+</div>
+
+<div class="wr-float">
+  @if (svc.settings().showHands && svc.visibleWrGames().length === 1) {
+    <span class="wr-hand left"></span>
+    <span class="wr-hand right"></span>
+  }
+  <div class="wr-row">
+    @for (g of svc.visibleWrGames(); track g) {
+      <div class="wr-card" [class.active]="g === svc.settings().activeGame">
+        <div class="wr-head">
+          <span class="wr-name">{{ g }}</span>
+          @if (g === svc.settings().activeGame) {
+            <span class="wr-playing">PLAYING</span>
+          }
+        </div>
+        @if (svc.user()?.email) {
+          <div class="wr-toggle">
+            <button [class.active]="statView() === 'raika'" (click)="statView.set('raika')">
+              Kerori Raika
+            </button>
+            <button [class.active]="statView() === 'me'" (click)="statView.set('me')">ของฉัน</button>
+          </div>
+        }
+        <div class="wr-boxes">
+          <div class="wr-box win">
+            <span class="wr-label">WIN</span>
+            <span class="wr-num">{{ displayStats(g).win }}</span>
+          </div>
+          <div class="wr-box lose">
+            <span class="wr-label">LOSE</span>
+            <span class="wr-num">{{ displayStats(g).lose }}</span>
+          </div>
+        </div>
+        <div class="wr-rate">
+          Win Rate: {{ displayStats(g).pct }} ({{ displayStats(g).win }}/{{ displayStats(g).total }})
+        </div>
+      </div>
+    }
+  </div>
+</div>

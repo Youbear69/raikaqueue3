@@ -1,0 +1,144 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>Master Data</h1>
+  </header>
+
+    <nav class="master-tabs">
+      @for (t of tabs; track t.key) {
+        <button class="m-tab" [class.active]="tab() === t.key" (click)="tab.set(t.key)">
+          {{ t.label }}
+        </button>
+      }
+    </nav>
+
+    @switch (tab()) {
+      @case ('games') {
+        <section class="master-card">
+          <form class="m-row" (submit)="addGame($event, gameInput)">
+            <input #gameInput class="m-input" placeholder="ชื่อเกมใหม่" maxlength="60" />
+            <button class="m-btn" type="submit">เพิ่มเกม</button>
+          </form>
+          <ul class="master-list">
+            @for (g of svc.games(); track g.id) {
+              <li>
+                <span [class.m-active]="g.name === svc.settings().activeGame">{{ g.name }}</span>
+                <span class="m-actions">
+                  <button class="m-btn" (click)="svc.setActiveGame(g.name)">ใช้เกมนี้</button>
+                  <button class="m-btn danger" (click)="svc.removeGame(g.id)">ลบ</button>
+                </span>
+              </li>
+            } @empty {
+              <li class="m-empty">
+                ยังไม่มีเกมใน master data (ระบบใช้ค่าเริ่มต้น 2 เกม)
+                <button class="m-btn" (click)="seedDefaults()">เพิ่มเกมเริ่มต้น</button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      @case ('widget') {
+        <section class="master-card">
+          <div class="m-row">
+            <label>ความทึบพื้นหลัง list widget: {{ opacityPercent() }}%</label>
+            <input type="range" min="0" max="100" [value]="opacityPercent()" (input)="onOpacity($event)" />
+          </div>
+          <div class="m-row">
+            <label>จำกัดจำนวนคิว (0 = ไม่จำกัด)</label>
+            <input
+              #limitInput
+              class="m-input"
+              type="number"
+              min="0"
+              [value]="svc.settings().queueLimit"
+              (input)="onLimit(limitInput.value)"
+            />
+          </div>
+          <div class="m-row">
+            <label>OBS URLs</label>
+            <code>{{ origin }}/widget</code>
+            <code>{{ origin }}/widget-list</code>
+          </div>
+        </section>
+      }
+      @case ('history') {
+        <section class="master-card">
+          <div class="m-row">
+            <span>เล่นไปแล้ว {{ svc.history().length }} คิว</span>
+            <button class="m-btn danger" (click)="clearHistory()">ล้างประวัติ</button>
+          </div>
+          <table class="master-table">
+            <thead>
+              <tr><th>ชื่อ</th><th>เกม</th><th>เวลา</th></tr>
+            </thead>
+            <tbody>
+              @for (h of svc.history(); track h.id) {
+                <tr>
+                  <td>{{ h.name }}</td>
+                  <td>{{ h.game }}</td>
+                  <td>{{ formatTime(h.playedAt) }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="m-empty">ยังไม่มีประวัติ</td></tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+      @case ('players') {
+        <section class="master-card">
+          <table class="master-table">
+            <thead>
+              <tr><th>ผู้เล่น</th><th>เกม</th><th>WIN</th><th>LOSE</th><th>Win Rate</th></tr>
+            </thead>
+            <tbody>
+              @for (r of playerRows(); track r.name + r.game) {
+                <tr>
+                  <td>{{ r.name }}</td>
+                  <td>{{ r.game }}</td>
+                  <td>{{ r.win }}</td>
+                  <td>{{ r.lose }}</td>
+                  <td>{{ r.pct }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="m-empty">ยังไม่มีสถิติผู้เล่น (บันทึกจากปุ่ม W/L ในหน้า Control)</td></tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+      @case ('terms') {
+        <section class="master-card">
+          <form class="m-row" (submit)="addTerm($event, termInput)">
+            <input #termInput class="m-input" placeholder="ข้อตกลงใหม่ เช่น ห้ามใช้รูปไม่เหมาะสม" maxlength="200" />
+            <button class="m-btn" type="submit">เพิ่มข้อตกลง</button>
+          </form>
+          <ul class="master-list">
+            @for (t of svc.terms(); track t.id) {
+              <li>
+                <span>{{ t.text }}</span>
+                <button class="m-btn danger" (click)="svc.removeTerm(t.id)">ลบ</button>
+              </li>
+            } @empty {
+              <li class="m-empty">ยังไม่มีข้อตกลง (popup ลงคิวจะไม่แสดงส่วนข้อตกลง)</li>
+            }
+          </ul>
+        </section>
+      }
+      @case ('admins') {
+        <section class="master-card">
+          <form class="m-row" (submit)="addAdmin($event, adminInput)">
+            <input #adminInput class="m-input" type="email" placeholder="email@gmail.com" />
+            <button class="m-btn" type="submit">เพิ่มแอดมิน</button>
+          </form>
+          <ul class="master-list">
+            @for (email of svc.adminEmails(); track email) {
+              <li>
+                <span>{{ email }}</span>
+                <button class="m-btn danger" (click)="removeAdmin(email)">ลบ</button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+</div>

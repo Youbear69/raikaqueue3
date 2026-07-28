@@ -1,0 +1,303 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 8;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 28px;
+  flex-wrap: wrap;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-white);
+  text-decoration: none;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.nav-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Dropdowns */
+.nav-dd {
+  position: relative;
+}
+
+.nav-dd-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-gray);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 10px 4px;
+}
+
+.nav-dd-btn:hover {
+  color: var(--text-white);
+}
+
+.dd-caret {
+  font-size: 0.7rem;
+  transform: translateY(1px);
+}
+
+.nav-dd-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 200px;
+  background: rgba(5, 12, 4, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+}
+
+.nav-dd-menu.open {
+  display: flex;
+}
+
+.nav-dd-menu a {
+  display: block;
+  color: var(--text-gray);
+  text-decoration: none;
+  font-size: 0.98rem;
+  padding: 13px 14px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.nav-dd-menu a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-white);
+}
+
+.nav-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Icon buttons + social links */
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.nav-icon-btn {
+  gap: 4px;
+}
+
+.nav-social {
+  color: var(--text-gray);
+  display: flex;
+  align-items: center;
+}
+
+.nav-social:hover {
+  color: var(--text-white);
+}
+
+.btn-auth-icon {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-auth-logout {
+  color: #ff4d4d;
+  border-color: rgba(255, 77, 77, 0.5);
+}
+
+.btn-auth-logout:hover {
+  background: rgba(255, 77, 77, 0.15);
+}
+
+/* Logged-in indicator: Google profile picture (or first letter fallback) */
+.nav-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(57, 255, 20, 0.5);
+  flex: none;
+}
+
+.nav-avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--badge-green);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* EasyDonate text badge (no official icon) — mimics their logo layout */
+.ed-badge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.05;
+  background: linear-gradient(135deg, #04040a 0%, #0d1a9e 55%, #2b5cff 100%);
+  border-radius: 6px;
+  padding: 4px 7px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.62rem;
+  letter-spacing: 0.2px;
+}
+
+.ed-badge:hover {
+  box-shadow: 0 0 10px rgba(43, 92, 255, 0.6);
+}
+
+.ed-easy {
+  color: #3d63ff;
+}
+
+.ed-donate {
+  color: #ffffff;
+}
+
+/* Discord placeholder: no server yet */
+.nav-social.disabled {
+  position: relative;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.nav-social.disabled:hover {
+  color: var(--text-gray);
+}
+
+.ban-badge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  width: 13px;
+  height: 13px;
+}
+
+/* Language menu items */
+.lang-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-gray);
+  font-size: 0.98rem;
+  padding: 13px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.lang-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-white);
+}
+
+.lang-item.active {
+  color: var(--active-green);
+  font-weight: 700;
+}
+
+.about-menu {
+  min-width: 260px;
+}
+
+.about-text {
+  color: var(--text-gray);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 10px 12px;
+}
+
+/* Toggle switches */
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+}
+
+.switch.on {
+  background: rgba(39, 174, 96, 0.6);
+  border-color: rgba(57, 255, 20, 0.5);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0b2507;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.18s ease-out;
+}
+
+.switch.on .knob {
+  left: 22px;
+}
+
+.knob-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Light theme */
+:host-context(body[data-theme='light']) .nav-dd-menu {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+:host-context(body[data-theme='light']) .nav-dd-menu a:hover,
+:host-context(body[data-theme='light']) .lang-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:host-context(body[data-theme='light']) .nav-sep {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+:host-context(body[data-theme='light']) .switch {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.2);
+}

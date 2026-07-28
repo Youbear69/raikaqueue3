@@ -1,0 +1,47 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>ตั้งค่าเว็บ</h1>
+  </header>
+
+  <section class="master-card settings-card">
+    <div class="m-row">
+      <label>ชื่อหน้า home</label>
+      <input
+        class="m-input"
+        placeholder="Kerori Raika"
+        [value]="svc.settings().siteTitle ?? ''"
+        (change)="setText('siteTitle', $any($event.target).value)"
+      />
+    </div>
+    <div class="m-row">
+      <label>คำโปรย (tagline)</label>
+      <input
+        class="m-input"
+        placeholder="เว็บสำหรับ VTuber ที่ไม่ค่อยจะดัง"
+        [value]="svc.settings().tagline ?? ''"
+        (change)="setText('tagline', $any($event.target).value)"
+      />
+    </div>
+    <div class="m-row">
+      <label>ข้อความ About</label>
+      <input
+        class="m-input"
+        placeholder="เว็บของ Kerori Raika — VTuber สายการ์ดเกมที่ไม่ค่อยจะดัง"
+        [value]="svc.settings().aboutText ?? ''"
+        (change)="setText('aboutText', $any($event.target).value)"
+      />
+    </div>
+
+    <div class="hp-label">ตัวอย่างหน้า home (หน้าจริง อัปเดตสด)</div>
+    <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">
+      <iframe
+        class="hp-frame"
+        src="/"
+        title="Home preview"
+        [style.width.px]="PREVIEW_W"
+        [style.height.px]="PREVIEW_H"
+        [style.transform]="'scale(' + scale() + ')'"
+      ></iframe>
+    </div>
+  </section>
+</div>

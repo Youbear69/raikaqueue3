@@ -1,0 +1,311 @@
+:host {
+  display: block;
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-color);
+}
+
+/* Same fading band under the nav as the home page */
+:host::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 320px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0) 100%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+:host-context(body[data-theme='light'])::after {
+  background: linear-gradient(to bottom, rgba(207, 229, 197, 0.95) 0%, rgba(207, 229, 197, 0.55) 40%, rgba(207, 229, 197, 0) 100%);
+}
+
+.reg-page {
+  position: relative;
+  z-index: 7;
+  max-width: 760px;
+  padding: 4vh 20px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.reg-head {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 700px;
+}
+
+.reg-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  color: var(--text-white);
+  text-shadow: 0 0 24px rgba(57, 255, 20, 0.25);
+}
+
+.reg-sub {
+  color: var(--text-gray);
+  font-size: 1.1rem;
+}
+
+.reg-form {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.reg-form .register-input {
+  width: 100%;
+  border: 2px solid var(--input-border);
+  background: var(--input-bg);
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: var(--text-white);
+  font-size: 1.1rem;
+}
+
+.reg-form .register-input::placeholder {
+  color: var(--text-gray);
+}
+
+.reg-form .register-input:focus {
+  outline: none;
+  border-color: var(--active-green);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
+}
+
+.reg-card {
+  width: 100%;
+  border: 1px solid rgba(39, 174, 96, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+:host-context(body[data-theme='light']) .reg-card {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(33, 150, 83, 0.55);
+}
+
+/* Opaque silhouette behind the faded character so the background
+   pattern does not show through the body. The wrapper is sized by the
+   image itself, so the silhouette always matches the rendered image. */
+.character-container {
+  position: fixed;
+}
+
+.char-wrap {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.char-solid {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-color);
+  -webkit-mask: url('/assets/raika_1.png') no-repeat center bottom / 100% auto;
+  mask: url('/assets/raika_1.png') no-repeat center bottom / 100% auto;
+}
+
+.character-img {
+  position: relative;
+  height: 100%;
+  max-height: none;
+  width: auto;
+}
+
+/* Register confirmation popup */
+.reg-modal {
+  max-width: 520px;
+  width: calc(100vw - 40px);
+  text-align: left;
+}
+
+.rm-photo-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.rm-preview {
+  width: 110px;
+  height: 110px;
+  border-radius: 12px;
+  border: 1px solid rgba(57, 255, 20, 0.4);
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: none;
+}
+
+.rm-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rm-nopic {
+  color: var(--text-gray);
+  font-size: 0.8rem;
+}
+
+.rm-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.rm-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.rm-url {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-white);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.rm-url-status {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+}
+
+.rm-url-status.ok {
+  color: var(--active-green);
+}
+
+.rm-url-status.bad {
+  color: var(--danger-red);
+}
+
+.rm-terms {
+  border-top: 1px solid rgba(39, 174, 96, 0.35);
+  padding-top: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rm-terms-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--warning-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rm-accept-all {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-white);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.rm-accept-all:hover {
+  background: var(--badge-green);
+}
+
+.rm-term {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-gray);
+  cursor: pointer;
+}
+
+.rm-term input {
+  margin-top: 3px;
+}
+
+.btn-modal:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Win-rate cards float over the character, bottom right */
+.wr-float {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 7;
+  width: min(680px, 46vw);
+}
+
+.wr-float .wr-card {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+:host-context(body[data-theme='light']) .wr-float .wr-card {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Hands gripping the card edges (only when a single card is shown).
+   Left/right hands are CSS-cropped from the same hands.png */
+.wr-hand {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 96px;
+  height: 170px;
+  background-image: url('/assets/hands.png');
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wr-hand.left {
+  left: -26px;
+  background-position: left center;
+}
+
+.wr-hand.right {
+  right: -26px;
+  background-position: right center;
+}
+
+/* Narrow screens: character would cover the form - hide it, cards back in flow */
+@media (max-width: 1250px) {
+  .character-container {
+    display: none;
+  }
+  .wr-float {
+    position: static;
+    width: auto;
+    padding: 0 20px 40px;
+  }
+}
