@@ -135,15 +135,27 @@
 /* 3-layer stacked character with cursor parallax:
    layer 3 (back) #90f25c, layer 2 #ffd278 — colored silhouettes via mask,
    layer 1 (front) real image with 3px #cefd88 outline */
+/* Width is vh-driven so the rendered size scales with viewport height —
+   visible portion stays ~66vh on any screen (mask-size contain is
+   width-limited, rendered height ~= 0.95 * width; 152vh - 86vh = 66vh) */
 .char-stack {
   position: absolute;
   z-index: 1;
   left: 58%;
   bottom: -86vh;
   transform: translateX(-50%);
-  width: min(1530px, 107vw);
+  width: min(160vh, 107vw);
   height: 179vh;
   pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .char-stack {
+    width: 100vw;
+    height: 60vh;
+    bottom: 0;
+    left: 50%;
+  }
 }
 
 .char-layer {
