@@ -46,7 +46,7 @@ export class HomeComponent {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const res = await fetch(
-          'https://corsproxy.io/?url=' +
+          'https://ytproxy.meowpow.shop/?url=' +
             encodeURIComponent('https://www.youtube.com/@keroriRaika/posts') +
             (attempt ? `&retry=${attempt}` : ''),
         );
@@ -107,7 +107,7 @@ export class HomeComponent {
       'https://www.youtube.com/feeds/videos.xml?channel_id=UCjnKbgxO0tCXzNlSsnYjdyg',
     );
     const proxies = [
-      `https://corsproxy.io/?url=${feed}`,
+      `https://ytproxy.meowpow.shop/?url=${feed}`, // own proxy (cloudflared tunnel)
       `https://api.allorigins.win/raw?url=${feed}`,
       `https://api.codetabs.com/v1/proxy?quest=${feed}`,
     ];
