@@ -282,6 +282,37 @@
   height: 12px;
 }
 
+/* Mobile: let the nav wrap into rows instead of cramming one line */
+@media (max-width: 760px) {
+  .site-nav {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .nav-brand {
+    font-size: 1.1rem;
+  }
+  .nav-logo {
+    width: 30px;
+    height: 30px;
+  }
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+    row-gap: 8px;
+  }
+  .nav-sep {
+    display: none;
+  }
+  .nav-dd-btn {
+    padding: 6px 2px;
+  }
+  .nav-dd-menu {
+    right: auto;
+    left: 0;
+  }
+}
+
 /* Light theme */
 :host-context(body[data-theme='light']) .nav-dd-menu {
   background: rgba(255, 255, 255, 0.92);
