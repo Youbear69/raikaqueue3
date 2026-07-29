@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
   --bg-color: #0b2507; /* Dark Forest Green from the screenshot */
@@ -15,7 +15,7 @@
   --danger-red: #e74c3c;
   --badge-green: #27ae60;
   
-  --font-family: 'Playpen Sans', system-ui, -apple-system, sans-serif;
+  --font-family: 'IBM Plex Sans Thai', system-ui, -apple-system, sans-serif;
 }
 
 * {
