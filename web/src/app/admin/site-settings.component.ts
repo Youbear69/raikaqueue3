@@ -38,4 +38,8 @@ export class SiteSettingsComponent implements AfterViewInit {
   setText(field: 'siteTitle' | 'tagline' | 'aboutText', value: string): void {
     this.svc.setSiteText({ [field]: value.trim() || null } as never);
   }
+
+  onLanyardToggle(e: Event): void {
+    this.svc.setLanyard({ lanyardOff: !(e.target as HTMLInputElement).checked });
+  }
 }

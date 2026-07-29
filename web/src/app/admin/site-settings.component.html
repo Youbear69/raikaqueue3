@@ -32,6 +32,39 @@
       />
     </div>
 
+    <div class="m-row">
+      <label>
+        <input
+          type="checkbox"
+          [checked]="!svc.settings().lanyardOff"
+          (change)="onLanyardToggle($event)"
+        />
+        แสดงบัตรห้อย 3D หน้าแรก
+      </label>
+    </div>
+    <div class="m-row">
+      <label>รูปหน้าบัตร (URL, สัดส่วนการ์ดเกม 63x88mm แนวตั้ง, ครอบเต็มใบ)</label>
+      <input
+        #lanFront
+        class="m-input"
+        type="url"
+        placeholder="https://... (เว้นว่าง = โลโก้)"
+        [value]="svc.settings().lanyardFront || ''"
+        (change)="svc.setLanyard({ lanyardFront: lanFront.value.trim() })"
+      />
+    </div>
+    <div class="m-row">
+      <label>รูปหลังบัตร (URL)</label>
+      <input
+        #lanBack
+        class="m-input"
+        type="url"
+        placeholder="https://... (เว้นว่าง = โลโก้)"
+        [value]="svc.settings().lanyardBack || ''"
+        (change)="svc.setLanyard({ lanyardBack: lanBack.value.trim() })"
+      />
+    </div>
+
     <div class="hp-label">ตัวอย่างหน้า home (หน้าจริง อัปเดตสด)</div>
     <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">
       <iframe

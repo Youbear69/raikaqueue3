@@ -24,6 +24,7 @@ const T = {
     motionTitle: 'เปิด/ปิดการเคลื่อนไหว',
     bgTitle: 'เปิด/ปิดภาพพื้นหลัง',
     themeTitle: 'ธีมมืด/สว่าง',
+    viewCard: 'ดูรายละเอียด',
   },
   en: {
     features: 'Features',
@@ -38,12 +39,13 @@ const T = {
     tagline: 'A website for a not-so-famous VTuber',
     joinQueue: 'Join the queue',
     latestClips: 'Latest videos',
-    latestPost: 'Latest post',
+    latestPost: 'Latest posts',
     openPost: 'Open post',
     openChannel: 'Open YouTube channel',
     motionTitle: 'Toggle motion',
     bgTitle: 'Toggle background art',
     themeTitle: 'Dark/light theme',
+    viewCard: 'View details',
   },
 };
 

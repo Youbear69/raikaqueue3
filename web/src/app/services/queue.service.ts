@@ -49,6 +49,9 @@ export interface Settings {
   siteTitle?: string; // home hero title override
   tagline?: string; // home tagline override
   aboutText?: string; // nav About dropdown override
+  lanyardOff?: boolean; // hide the 3D lanyard badge on home
+  lanyardFront?: string; // card front image URL (ID-1 ratio, cover-fit)
+  lanyardBack?: string; // card back image URL
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -315,6 +318,10 @@ export class QueueService {
 
   setShowHands(v: boolean): void {
     update(ref(this.db, 'settings'), { showHands: v });
+  }
+
+  setLanyard(patch: Partial<Pick<Settings, 'lanyardOff' | 'lanyardFront' | 'lanyardBack'>>): void {
+    update(ref(this.db, 'settings'), patch);
   }
 
   setListOpacity(v: number): void {
