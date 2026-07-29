@@ -2,12 +2,13 @@ import { Component, HostListener, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
 import { SiteNavComponent } from '../shared/site-nav/site-nav.component';
+import { LanyardComponent } from '../shared/lanyard/lanyard.component';
 import { QueueService } from '../services/queue.service';
 import { UiService } from '../services/ui.service';
 
 @Component({
   selector: 'home-page',
-  imports: [RouterLink, SiteBgComponent, SiteNavComponent],
+  imports: [RouterLink, SiteBgComponent, SiteNavComponent, LanyardComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -34,7 +35,7 @@ export class HomeComponent {
   }
 
   // Community posts scraped from the channel /posts page (no official API)
-  readonly post = signal<{ id: string; text: string; img: string | null } | null>(null);
+  readonly posts = signal<{ id: string; text: string; img: string | null }[]>([]);
   // Schedule panel: post tagged/containing "ScheduleWeek", else the latest post
   readonly schedule = signal<{ id: string; img: string } | null>(null);
   readonly schedOpen = signal(false);
@@ -51,7 +52,7 @@ export class HomeComponent {
             (attempt ? `&retry=${attempt}` : ''),
         );
         const html = await res.text();
-        const segments = html.split('"backstagePostRenderer":{').slice(1, 6);
+        const segments = html.split('"backstagePostRenderer":{').slice(1, 11);
         const posts: { id: string; text: string; img: string | null }[] = [];
         for (const seg of segments) {
           const chunk = seg.slice(0, 20000);
@@ -71,7 +72,7 @@ export class HomeComponent {
           if (id && (text || img)) posts.push({ id, text, img });
         }
         if (!posts.length) continue;
-        this.post.set(posts[0]);
+        this.posts.set(posts);
         const sched =
           posts.find((p) => /#?\s*schedule\s*week/i.test(p.text) && p.img) ??
           posts.find((p) => p.img);

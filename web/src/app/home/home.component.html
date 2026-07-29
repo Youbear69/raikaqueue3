@@ -48,6 +48,10 @@
 }
 
 <footer class="home-footer">Since 2026 @ Kerori Raika</footer>
+
+@if (!svc.settings().lanyardOff) {
+  <lanyard-badge />
+}
 </div>
 
 <section class="clips-section">
@@ -99,28 +103,37 @@
   }
 </section>
 
-@if (post(); as ps) {
+@if (posts().length) {
   <section class="clips-section post-section">
     <div class="clips-head">
       <h2>{{ ui.t().latestPost }}</h2>
-      <a
-        class="yt-link"
-        [href]="'https://www.youtube.com/post/' + ps.id"
-        target="_blank"
-        rel="noopener"
-      >{{ ui.t().openPost }}</a>
     </div>
-    <div class="post-body">
-      @if (ps.img) {
-        <img
-          class="post-img"
-          [src]="ps.img"
-          referrerpolicy="no-referrer"
-          alt=""
-          (click)="viewPost.set(ps.img)"
-        />
+    <div class="post-grid">
+      @for (ps of posts(); track ps.id) {
+        <div class="post-card">
+          @if (ps.img) {
+            <img
+              class="post-card-img"
+              [src]="ps.img"
+              referrerpolicy="no-referrer"
+              alt=""
+              loading="lazy"
+              (click)="viewPost.set(ps.img)"
+            />
+          }
+          <div class="post-card-body">
+            @if (ps.text) {
+              <p class="post-card-text">{{ ps.text }}</p>
+            }
+            <a
+              class="yt-link post-card-link"
+              [href]="'https://www.youtube.com/post/' + ps.id"
+              target="_blank"
+              rel="noopener"
+            >{{ ui.t().openPost }} &rsaquo;</a>
+          </div>
+        </div>
       }
-      <p class="post-text">{{ ps.text }}</p>
     </div>
   </section>
 }
