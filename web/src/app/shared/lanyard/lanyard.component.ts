@@ -98,7 +98,7 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
             <label class="stk-drag">
               <input type="checkbox" [checked]="stkDrag()"
                 (change)="stkDrag.set($any($event.target).checked)" />
-              เปิดลากรูป/ย้ายสติ๊กเกอร์ (กันย้ายโดยไม่ตั้งใจ)
+              เปิดลากรูป/ย้ายสติ๊กเกอร์
             </label>
             @if (stkMsg()) {
               <div class="stk-msg">{{ stkMsg() }}</div>
