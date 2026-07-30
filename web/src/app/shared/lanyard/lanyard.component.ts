@@ -41,11 +41,19 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
           <div
             class="cv-card"
             [style.transform]="'rotateX(' + cvTilt() + 'deg) rotateY(' + cvAngle() + 'deg)'"
-            (dragover)="dragStickerUrl && $event.preventDefault()"
+            (dragover)="dragOverViewer($event)"
             (drop)="dropOnViewer($event)"
           >
             <img class="cv-face" [src]="v.front" alt="" draggable="false" />
             <img class="cv-face cv-back" [src]="v.back" alt="" draggable="false" />
+            @if (cvLift(); as L) {
+              <div class="cv-lift" [class.stamp]="L.stamp" [style.left.%]="L.x" [style.top.%]="L.y"
+                [style.width.%]="L.w">
+                <img [src]="L.src"
+                  [style.transform]="'rotate(' + L.rot + 'deg)' + (L.back ? ' scaleX(-1)' : '')"
+                  alt="" draggable="false" />
+              </div>
+            }
           </div>
         </div>
         @if (svc.isAdmin()) {
@@ -70,7 +78,8 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
               <div class="stk-grid">
                 @for (img of p.images; track img.id) {
                   <img [src]="img.url" [alt]="img.name" [title]="img.name" draggable="true"
-                    crossorigin="anonymous" (dragstart)="onPaletteDrag(img.url)" />
+                    crossorigin="anonymous" (dragstart)="onPaletteDrag(img.url, $event)"
+                    (dragend)="onPaletteDragEnd()" />
                 } @empty {
                   <div class="stk-empty">ไม่มีรูป</div>
                 }
@@ -227,6 +236,31 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
     .cv-back {
       transform: rotateY(180deg);
     }
+    .cv-lift {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+      transform: translate(-50%, -50%) scale(1.14);
+      transition: transform 0.12s;
+    }
+    .cv-lift img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.5));
+    }
+    .cv-lift.stamp {
+      animation: cv-stamp 0.3s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+    }
+    @keyframes cv-stamp {
+      from {
+        transform: translate(-50%, -50%) scale(1.7);
+        opacity: 0.85;
+      }
+      to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
     @media (max-width: 899px) {
       :host { display: none; }
     }
@@ -250,11 +284,26 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   readonly zoneHot = signal(false);
   readonly viewer = signal<{ front: string; back: string } | null>(null);
   private getCardImages: (() => { front: string; back: string } | null) | null = null;
-  // viewer-side sticker editing (admin): hit test + re-bake with a moved sticker
-  private stickerHit: ((px: number, py: number) => number | null) | null = null;
-  private viewerImagesWith:
-    | ((ov: Map<number, { x: number; y: number }>) => { front: string; back: string } | null)
+  // viewer-side sticker editing (admin): hit test, bake-without-one, sticker info
+  private stickerHit: ((px: number, py: number, side: 'front' | 'back') => number | null) | null =
+    null;
+  private viewerImagesSkip: ((skip: number) => { front: string; back: string } | null) | null =
+    null;
+  private stickerInfo:
+    | ((idx: number) => { src: string; size: number; rot: number } | null)
     | null = null;
+
+  // lifted/stamping sticker overlay in the viewer (phase-2 attach/peel feel)
+  readonly cvLift = signal<{
+    idx: number;
+    src: string;
+    x: number;
+    y: number;
+    w: number;
+    rot: number;
+    stamp?: boolean;
+    back?: boolean;
+  } | null>(null);
 
   // ---- sticker palette (admin, inside the card viewer): drag an image onto the card ----
   readonly palette = signal<DriveListing | null>(null);
@@ -262,21 +311,19 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   readonly stkMsg = signal('');
   dragStickerUrl: string | null = null;
 
-  // Local draft of the sticker list: consecutive edits (move A then move B) must
-  // not base themselves on a settings snapshot that predates the previous write.
+  // Local draft of the sticker list: bridges only the moment between our write
+  // and its local echo, so back-to-back edits never base on a stale snapshot.
   private stickersDraft: LanyardSticker[] | null = null;
 
+  // ANY settings emission (our echo or an edit from the settings page) is the
+  // truth — drop the draft so it can never mask external changes
+  private readonly draftClearEff = effect(() => {
+    this.svc.settings().lanyardStickers;
+    this.stickersDraft = null;
+  });
+
   private curStickers(): LanyardSticker[] {
-    const fromSettings = this.svc.settings().lanyardStickers ?? [];
-    if (this.stickersDraft) {
-      // settings caught up with our last write -> drop the draft
-      if (JSON.stringify(fromSettings) === JSON.stringify(this.stickersDraft)) {
-        this.stickersDraft = null;
-      } else {
-        return this.stickersDraft;
-      }
-    }
-    return fromSettings;
+    return this.stickersDraft ?? (this.svc.settings().lanyardStickers ?? []);
   }
 
   private writeStickers(list: LanyardSticker[]): void {
@@ -287,11 +334,47 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     this.svc.setLanyardStickers(list);
   }
 
-  onPaletteDrag(url: string): void {
+  // 1x1 transparent gif — suppresses the tiny native drag ghost
+  private readonly dragGhost = (() => {
+    const i = new Image();
+    i.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    return i;
+  })();
+
+  onPaletteDrag(url: string, e: DragEvent): void {
     this.dragStickerUrl = url;
-    // snap the card flat so the drop point maps 1:1 onto the face
-    this.cvAngle.set(0);
+    // snap flat to the NEAREST face — viewing the back keeps you on the back
+    const a = ((this.cvAngle() % 360) + 360) % 360;
+    this.cvAngle.set(a > 90 && a < 270 ? 180 : 0);
     this.cvTilt.set(0);
+    e.dataTransfer?.setDragImage(this.dragGhost, 0, 0);
+  }
+
+  onPaletteDragEnd(): void {
+    // drag cancelled (no drop): clear the preview overlay
+    this.dragStickerUrl = null;
+    const L = this.cvLift();
+    if (L && L.idx === -1 && !L.stamp) this.cvLift.set(null);
+  }
+
+  // while dragging from the palette, a real-size preview follows the pointer
+  dragOverViewer(e: DragEvent): void {
+    if (!this.dragStickerUrl) return;
+    e.preventDefault();
+    const facing = this.cvFacing() ?? 'front';
+    this.cvStickerFacing = facing;
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.max(2, Math.min(98, ((e.clientX - r.left) / r.width) * 100));
+    const y = Math.max(2, Math.min(98, ((e.clientY - r.top) / r.height) * 100));
+    this.cvLift.set({
+      idx: -1,
+      src: this.dragStickerUrl,
+      x: this.overlayX(x),
+      y,
+      w: 25,
+      rot: 0,
+      back: facing === 'back',
+    });
   }
 
   dropOnViewer(e: DragEvent): void {
@@ -310,13 +393,21 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       return;
     }
     this.stkMsg.set('');
-    list.push({
-      img: url,
-      x: Math.max(2, Math.min(98, x)),
-      y: Math.max(2, Math.min(98, y)),
-      size: 25,
+    const facing = this.cvFacing() ?? 'front';
+    this.cvStickerFacing = facing;
+    const nx = Math.max(2, Math.min(98, x));
+    const ny = Math.max(2, Math.min(98, y));
+    list.push({ img: url, x: nx, y: ny, size: 25, rot: 0, sheen: '', side: facing });
+    // stamp-down animation while the rebuilt snapshot is on its way
+    this.cvLift.set({
+      idx: list.length - 1,
+      src: url,
+      x: this.overlayX(nx),
+      y: ny,
+      w: 25,
       rot: 0,
-      sheen: '',
+      stamp: true,
+      back: facing === 'back',
     });
     this.writeStickers(list);
   }
@@ -353,31 +444,59 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   private cvLast: { x: number; y: number } | null = null;
   private cvStickerIdx: number | null = null;
   private cvStickerPos: { x: number; y: number } | null = null;
-  private cvBakeAt = 0;
+  private cvStickerSize: number | null = null;
 
   private cvCardRect(e: PointerEvent): DOMRect | null {
     const el = (e.currentTarget as HTMLElement).querySelector('.cv-card');
     return el ? el.getBoundingClientRect() : null;
   }
 
-  private cvFlat(): boolean {
-    const near = (v: number) => {
-      const m = Math.abs(v % 360);
-      return m < 25 || m > 335;
-    };
-    return near(this.cvAngle()) && near(this.cvTilt());
+  // which face the viewer card is showing (null = too oblique to edit)
+  private cvFacing(): 'front' | 'back' | null {
+    const norm = (v: number) => ((v % 360) + 360) % 360;
+    const t = norm(this.cvTilt());
+    if (t > 25 && t < 335) return null;
+    const a = norm(this.cvAngle());
+    if (a < 25 || a > 335) return 'front';
+    if (a > 155 && a < 205) return 'back';
+    return null;
+  }
+
+  private cvStickerFacing: 'front' | 'back' = 'front';
+
+  // overlay left% — the flipped card mirrors child positions, so back = 100-x
+  private overlayX(faceX: number): number {
+    return this.cvStickerFacing === 'back' ? 100 - faceX : faceX;
   }
 
   cvDown(e: PointerEvent): void {
-    if (this.svc.isAdmin() && this.cvFlat()) {
+    const facing = this.cvFacing();
+    if (this.svc.isAdmin() && facing) {
       const r = this.cvCardRect(e);
       if (r) {
+        // screen % maps 1:1 onto the shown face's bake space (both faces)
         const px = ((e.clientX - r.left) / r.width) * 100;
         const py = ((e.clientY - r.top) / r.height) * 100;
-        const idx = this.stickerHit?.(px, py) ?? null;
-        if (idx !== null) {
+        const idx = this.stickerHit?.(px, py, facing) ?? null;
+        const info = idx !== null ? this.stickerInfo?.(idx) : null;
+        if (idx !== null && info) {
           this.cvStickerIdx = idx;
+          this.cvStickerFacing = facing;
           this.cvStickerPos = { x: px, y: py };
+          this.cvStickerSize = info.size;
+          // peel: re-bake the card WITHOUT this sticker once, then a floating
+          // overlay follows the pointer (lifted look, no per-move re-bakes)
+          const imgs = this.viewerImagesSkip?.(idx);
+          if (imgs) this.viewer.set(imgs);
+          this.cvLift.set({
+            idx,
+            src: info.src,
+            x: this.overlayX(px),
+            y: py,
+            w: info.size,
+            rot: info.rot,
+            back: facing === 'back',
+          });
           (e.target as Element).setPointerCapture(e.pointerId);
           return;
         }
@@ -393,12 +512,8 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       const x = Math.max(2, Math.min(98, ((e.clientX - r.left) / r.width) * 100));
       const y = Math.max(2, Math.min(98, ((e.clientY - r.top) / r.height) * 100));
       this.cvStickerPos = { x, y };
-      const now = Date.now();
-      if (now - this.cvBakeAt > 90) {
-        this.cvBakeAt = now;
-        const imgs = this.viewerImagesWith?.(new Map([[this.cvStickerIdx, { x, y }]]));
-        if (imgs) this.viewer.set(imgs);
-      }
+      const L = this.cvLift();
+      if (L) this.cvLift.set({ ...L, x: this.overlayX(x), y });
       return;
     }
     if (!this.cvLast) return;
@@ -410,13 +525,25 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     if (this.cvStickerIdx !== null) {
       const idx = this.cvStickerIdx;
       const p = this.cvStickerPos;
+      const size = this.cvStickerSize;
       this.cvStickerIdx = null;
       this.cvStickerPos = null;
+      this.cvStickerSize = null;
       (e.target as Element).releasePointerCapture?.(e.pointerId);
+      // press back down; the overlay clears when the rebuilt snapshot arrives
+      const L = this.cvLift();
+      if (L) this.cvLift.set({ ...L, stamp: true });
       if (p) {
-        const list = this.curStickers().map((s, i) =>
-          i === idx ? { ...s, x: Math.round(p.x), y: Math.round(p.y) } : s,
-        );
+        // last-touched sticker moves to the end of the list = top layer
+        const list = [...this.curStickers()];
+        const moved = {
+          ...list[idx],
+          x: Math.round(p.x),
+          y: Math.round(p.y),
+          size: Math.round(size ?? list[idx]?.size ?? 25),
+        };
+        list.splice(idx, 1);
+        list.push(moved);
         this.writeStickers(list);
       }
       return;
@@ -426,6 +553,13 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   }
   cvWheel(e: WheelEvent): void {
     e.preventDefault();
+    // holding a sticker: wheel resizes it (up = bigger); otherwise spin the card
+    if (this.cvStickerIdx !== null && this.cvStickerSize !== null) {
+      this.cvStickerSize = Math.max(5, Math.min(80, this.cvStickerSize - e.deltaY * 0.04));
+      const L = this.cvLift();
+      if (L) this.cvLift.set({ ...L, w: this.cvStickerSize });
+      return;
+    }
     this.cvAngle.update((a) => a + e.deltaY * 0.3);
   }
 
@@ -478,6 +612,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     const host = canvas.parentElement as HTMLElement; // component host, inset 0 of .landing
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.localClippingEnabled = true; // stickers are clipped to the card rectangle
 
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
     camera.position.set(0, 0, 13);
@@ -642,6 +777,10 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     // ---- stickers on the card front (live-editable) ----
     const stickerGroup = new THREE.Group();
     cardGroup.add(stickerGroup);
+    // 4 world-space planes hugging the card edges (refreshed every frame)
+    const stickerClips = [new THREE.Plane(), new THREE.Plane(), new THREE.Plane(), new THREE.Plane()];
+    const clipN = new THREE.Vector3();
+    const clipP = new THREE.Vector3();
     // foil sheen: diagonal stripes in the chosen color, masked to the sticker's
     // own alpha, drawn additively above the sticker and pulsed with the card sway
     const makeSheenCanvas = (im: HTMLImageElement, color: string): HTMLCanvasElement => {
@@ -668,6 +807,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     }[] = [];
     let stickerJson = '';
     let stickerBuild = 0;
+    let firstStickerBuild = true;
     const buildStickers = async (defs: LanyardSticker[]): Promise<void> => {
       const json = JSON.stringify(defs);
       if (json === stickerJson) return;
@@ -694,6 +834,9 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       });
       stickerMats = [];
       sheenAnims = [];
+      const prevIdxs = new Set(stickerLoaded.map((s) => s.idx));
+      const popNew = !firstStickerBuild; // no pop on the initial page-load build
+      firstStickerBuild = false;
       stickerLoaded = loaded;
       for (const entry of loaded) {
         const { d, im, idx } = entry;
@@ -702,14 +845,31 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
         tex.needsUpdate = true;
         const w = ((d.size || 25) / 100) * CARD_W;
         const h = w * (im.height / im.width);
-        const px = ((d.x ?? 50) / 100 - 0.5) * CARD_W;
+        const backSide = (d.side ?? 'front') === 'back';
+        const px = backSide
+          ? (0.5 - (d.x ?? 50) / 100) * CARD_W
+          : ((d.x ?? 50) / 100 - 0.5) * CARD_W;
         const py = (0.5 - (d.y ?? 50) / 100) * CARD_H;
         const rz = ((d.rot ?? 0) * Math.PI) / 180;
-        const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+        // no depth writes + explicit render order per index: same-plane stickers
+        // would otherwise depth-clip each other into black cutouts
+        const z0 = backSide ? -(0.0055 + idx * 0.0008) : 0.004 + idx * 0.0008;
+        const zDir = backSide ? -1 : 1;
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          depthWrite: false,
+          clippingPlanes: stickerClips,
+        });
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-        mesh.position.set(px, py, 0.004);
-        mesh.rotation.z = rz;
+        mesh.position.set(px, py, z0);
+        if (backSide) mesh.rotation.set(0, Math.PI, -rz);
+        else mesh.rotation.z = rz;
+        mesh.renderOrder = 0.5 + idx * 0.01;
         mesh.userData['idx'] = idx; // index into settings.lanyardStickers
+        mesh.userData['z0'] = z0;
+        mesh.userData['zdir'] = zDir;
+        if (popNew && !prevIdxs.has(idx)) mesh.userData['born'] = performance.now();
         stickerGroup.add(mesh);
         stickerMats.push(mat);
         if (d.sheen) {
@@ -722,19 +882,27 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             opacity: 0,
+            clippingPlanes: stickerClips,
           });
           const smesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), smat);
-          smesh.position.set(px, py, 0.0045);
-          smesh.rotation.z = rz;
+          smesh.position.set(px, py, z0 + zDir * 0.0004);
+          if (backSide) smesh.rotation.set(0, Math.PI, -rz);
+          else smesh.rotation.z = rz;
+          smesh.renderOrder = 0.5 + idx * 0.01 + 0.005;
+          smesh.userData['z0'] = z0 + zDir * 0.0004;
+          smesh.userData['zdir'] = zDir;
+          if (popNew && !prevIdxs.has(idx)) smesh.userData['born'] = performance.now();
           stickerGroup.add(smesh);
           stickerMats.push(smat);
           sheenAnims.push({ mat: smat, phase: idx * 1.7 });
         }
       }
-      // viewer open? refresh its snapshots so the new sticker shows immediately
+      // viewer open? refresh its snapshots so the edit shows immediately,
+      // and retire the lifted/stamping overlay (its sticker is baked in now)
       if (this.viewer()) {
         const imgs = this.getCardImages?.();
         if (imgs) this.viewer.set(imgs);
+        this.cvLift.set(null);
       }
     };
     this.applyStickers = (defs) => void buildStickers(defs);
@@ -955,23 +1123,29 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       document.body.style.cursor = '';
       if (dropped) this.openViewer();
     };
-    const buildViewerImages = (
-      ov?: Map<number, { x: number; y: number }>,
-    ): { front: string; back: string } | null => {
+    const buildViewerImages = (skip?: number): { front: string; back: string } | null => {
       try {
         // fresh canvases without the punch hole for the full-size viewer
         const fc = document.createElement('canvas');
         const bc = document.createElement('canvas');
         drawCardFace(fc, lastFImg, false);
         drawCardFace(bc, lastBImg, false);
-        // composite the stickers onto the front face
-        const g = fc.getContext('2d')!;
+        // composite the stickers onto their face, clipped to the card shape
+        const gf = fc.getContext('2d')!;
+        const gb = bc.getContext('2d')!;
+        for (const g of [gf, gb]) {
+          g.save();
+          g.beginPath();
+          g.roundRect(6, 6, 618, 868, 35);
+          g.clip();
+        }
         for (const { d, im, idx, sheen } of stickerLoaded) {
-          const o = ov?.get(idx);
+          if (idx === skip) continue; // lifted sticker rendered as an overlay instead
+          const g = (d.side ?? 'front') === 'back' ? gb : gf;
           const w = ((d.size || 25) / 100) * 630;
           const h = w * (im.height / im.width);
           g.save();
-          g.translate(((o?.x ?? d.x ?? 50) / 100) * 630, ((o?.y ?? d.y ?? 50) / 100) * 880);
+          g.translate(((d.x ?? 50) / 100) * 630, ((d.y ?? 50) / 100) * 880);
           g.rotate((-(d.rot ?? 0) * Math.PI) / 180);
           g.drawImage(im, -w / 2, -h / 2, w, h);
           if (sheen) {
@@ -980,18 +1154,25 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
           }
           g.restore();
         }
+        gf.restore();
+        gb.restore();
         return { front: fc.toDataURL(), back: bc.toDataURL() };
       } catch {
         return null; // canvas tainted by a non-CORS image
       }
     };
     this.getCardImages = () => buildViewerImages();
-    this.viewerImagesWith = (ov) => buildViewerImages(ov);
-    // hit test in card-percent space (viewer sticker grab)
-    this.stickerHit = (px, py) => {
+    this.viewerImagesSkip = (skip) => buildViewerImages(skip);
+    this.stickerInfo = (idx) => {
+      const en = stickerLoaded.find((s) => s.idx === idx);
+      return en ? { src: en.im.src, size: en.d.size || 25, rot: en.d.rot ?? 0 } : null;
+    };
+    // hit test in face-percent space (viewer sticker grab), per card side
+    this.stickerHit = (px, py, side) => {
       let best: number | null = null;
       let bestD = Infinity;
       for (const { d, im, idx } of stickerLoaded) {
+        if ((d.side ?? 'front') !== side) continue;
         const wPct = d.size || 25; // % of card width
         const hPct = ((((d.size || 25) / 100) * 630 * (im.height / im.width)) / 880) * 100;
         const dx = px - (d.x ?? 50);
@@ -1051,6 +1232,28 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       cardGroup.position.set(ct.x, ct.y, ct.z);
       cardGroup.quaternion.set(cq.x, cq.y, cq.z, cq.w);
 
+      // keep the sticker clipping planes hugging the card edges
+      clipN.set(1, 0, 0).applyQuaternion(cardGroup.quaternion);
+      stickerClips[0].setFromNormalAndCoplanarPoint(
+        clipN,
+        clipP.copy(cardGroup.position).addScaledVector(clipN, -CARD_W / 2),
+      );
+      clipN.negate();
+      stickerClips[1].setFromNormalAndCoplanarPoint(
+        clipN,
+        clipP.copy(cardGroup.position).addScaledVector(clipN, -CARD_W / 2),
+      );
+      clipN.set(0, 1, 0).applyQuaternion(cardGroup.quaternion);
+      stickerClips[2].setFromNormalAndCoplanarPoint(
+        clipN,
+        clipP.copy(cardGroup.position).addScaledVector(clipN, -CARD_H / 2),
+      );
+      clipN.negate();
+      stickerClips[3].setFromNormalAndCoplanarPoint(
+        clipN,
+        clipP.copy(cardGroup.position).addScaledVector(clipN, -CARD_H / 2),
+      );
+
       const pts = curve.points;
       const at = anchor.translation();
       targ[0].set(at.x, at.y, at.z);
@@ -1108,6 +1311,21 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       // foil shimmer: slow pulse + reacts to the card's yaw sway
       for (const s of sheenAnims) {
         s.mat.opacity = 0.12 + 0.55 * Math.abs(Math.sin(now / 900 + s.phase + cq.y * 5));
+      }
+      // stamp-down pop for freshly attached stickers
+      for (const ch of stickerGroup.children) {
+        const born = ch.userData['born'] as number | undefined;
+        if (born === undefined) continue;
+        const t = Math.min(1, (now - born) / 450);
+        const ease = 1 - Math.pow(1 - t, 3);
+        ch.scale.setScalar(1.7 - 0.7 * ease);
+        ch.position.z =
+          (ch.userData['z0'] as number) + ((ch.userData['zdir'] as number) ?? 1) * 0.25 * (1 - ease);
+        if (t >= 1) {
+          ch.scale.setScalar(1);
+          ch.position.z = ch.userData['z0'] as number;
+          delete ch.userData['born'];
+        }
       }
 
       renderer.render(scene, camera);

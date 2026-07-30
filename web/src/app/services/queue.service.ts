@@ -112,11 +112,12 @@ export interface HeroButton {
 
 export interface LanyardSticker {
   img: string; // image URL
-  x: number; // % across the card, 0 = left edge
-  y: number; // % down the card, 0 = top edge
+  x: number; // % across the face, 0 = left edge
+  y: number; // % down the face, 0 = top edge
   size: number; // % of card width
   rot: number; // degrees
   sheen: string; // foil-shine tint hex, '' = off
+  side?: 'front' | 'back'; // which card face (default front)
 }
 
 // Feature on/off flags editable from the admin site-settings page
