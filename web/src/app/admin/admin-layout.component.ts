@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AdminLoginComponent } from '../shared/admin-login/admin-login.component';
 import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
@@ -13,4 +13,6 @@ import { QueueService } from '../services/queue.service';
 })
 export class AdminLayoutComponent {
   readonly svc = inject(QueueService);
+  // "ตั้งค่า UI" sidebar group open/closed
+  readonly uiOpen = signal(true);
 }

@@ -1,10 +1,11 @@
-import { Component, HostListener, effect, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
 import { SiteNavComponent } from '../shared/site-nav/site-nav.component';
 import { LanyardComponent } from '../shared/lanyard/lanyard.component';
-import { QueueService } from '../services/queue.service';
+import { HeroButton, QueueService } from '../services/queue.service';
 import { UiService } from '../services/ui.service';
+import { DRIVE_API } from '../shared/drive-url';
 
 @Component({
   selector: 'home-page',
@@ -16,7 +17,25 @@ export class HomeComponent {
   readonly ui = inject(UiService);
   readonly svc = inject(QueueService);
 
-  readonly img = signal('assets/raika_2.png');
+  // Admin-set hero buttons; none set = the default join-queue button
+  readonly heroButtons = computed<HeroButton[]>(() => {
+    const list = this.svc.settings().heroButtons;
+    return list?.length
+      ? list
+      : [{ th: this.ui.t().joinQueue, en: this.ui.t().joinQueue, url: '/register' }];
+  });
+
+  btnLabel(b: HeroButton): string {
+    return (this.ui.lang() === 'th' ? b.th : b.en) || b.en || b.th;
+  }
+
+  // hero renders big — ask the image proxy for 2500px (covers values saved before ?s existed)
+  readonly img = computed(() => {
+    const s = this.svc.settings();
+    const u = s.charImgOff ? '' : s.charImg;
+    if (!u) return 'assets/raika_2.png';
+    return u.startsWith(DRIVE_API) && !u.includes('?') ? `${u}?s=2500` : u;
+  });
 
   // Latest clips from the channel RSS feed (free, no API key) via a CORS proxy.
   // ponytail: allorigins is a third-party free proxy; on failure the template
@@ -36,8 +55,16 @@ export class HomeComponent {
 
   // Community posts scraped from the channel /posts page (no official API)
   readonly posts = signal<{ id: string; text: string; img: string | null }[]>([]);
-  // Schedule panel: post tagged/containing "ScheduleWeek", else the latest post
-  readonly schedule = signal<{ id: string; img: string } | null>(null);
+  // Schedule panel: post containing the admin-set keyword (default "schedule week"),
+  // else the latest post with an image. Whitespace-insensitive so "#ScheduleWeek" matches.
+  readonly schedule = computed(() => {
+    const norm = (s: string) => s.replace(/\s+/g, '').toLowerCase();
+    const key = norm(this.svc.settings().schedKey || 'schedule week');
+    const sched =
+      this.posts().find((p) => p.img && norm(p.text).includes(key)) ??
+      this.posts().find((p) => p.img);
+    return sched?.img ? { id: sched.id, img: sched.img } : null;
+  });
   readonly schedOpen = signal(false);
   readonly viewPost = signal<string | null>(null);
 
@@ -73,10 +100,6 @@ export class HomeComponent {
         }
         if (!posts.length) continue;
         this.posts.set(posts);
-        const sched =
-          posts.find((p) => /#?\s*schedule\s*week/i.test(p.text) && p.img) ??
-          posts.find((p) => p.img);
-        if (sched?.img) this.schedule.set({ id: sched.id, img: sched.img });
         return;
       } catch {
         // try again

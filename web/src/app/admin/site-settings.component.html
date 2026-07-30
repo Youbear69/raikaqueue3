@@ -1,129 +1,198 @@
 <div class="master-container">
   <header class="master-header">
-    <h1>ตั้งค่าเว็บ</h1>
+    <h1>ตั้งค่าเว็บ (หน้า home)</h1>
+    <button class="m-btn" type="button" (click)="reset()">ล้างการตั้งค่า (ค่าเริ่มต้น)</button>
   </header>
 
   <section class="master-card settings-card">
+    <h3>หน้า Home</h3>
+    <p style="opacity: 0.7; font-size: 13px">ช่องซ้าย = ไทย, ช่องขวา = EN (เว้นช่องใดช่องหนึ่ง = ใช้อีกภาษาแทน)</p>
     <div class="m-row">
       <label>ชื่อหน้า home</label>
-      <input
-        class="m-input"
-        placeholder="Kerori Raika"
-        [value]="svc.settings().siteTitle ?? ''"
-        (change)="setText('siteTitle', $any($event.target).value)"
-      />
+      <input class="m-input" placeholder="Kerori Raika (ไทย)" [value]="svc.settings().siteTitle ?? ''"
+        (change)="setText('siteTitle', $any($event.target).value)" />
+      <input class="m-input" placeholder="Kerori Raika (EN)" [value]="svc.settings().siteTitleEn ?? ''"
+        (change)="setText('siteTitleEn', $any($event.target).value)" />
     </div>
     <div class="m-row">
       <label>คำโปรย (tagline)</label>
-      <input
-        class="m-input"
-        placeholder="เว็บสำหรับ VTuber ที่ไม่ค่อยจะดัง"
-        [value]="svc.settings().tagline ?? ''"
-        (change)="setText('tagline', $any($event.target).value)"
-      />
-    </div>
-    <div class="m-row">
-      <label>ข้อความ About</label>
-      <input
-        class="m-input"
-        placeholder="เว็บของ Kerori Raika — VTuber สายการ์ดเกมที่ไม่ค่อยจะดัง"
-        [value]="svc.settings().aboutText ?? ''"
-        (change)="setText('aboutText', $any($event.target).value)"
-      />
+      <input class="m-input" placeholder="เว็บสำหรับ VTuber ที่ไม่ค่อยจะดัง" [value]="svc.settings().tagline ?? ''"
+        (change)="setText('tagline', $any($event.target).value)" />
+      <input class="m-input" placeholder="A website for a not-so-famous VTuber"
+        [value]="svc.settings().taglineEn ?? ''" (change)="setText('taglineEn', $any($event.target).value)" />
     </div>
 
+    <h3>ปุ่มหน้าแรก</h3>
+    <p style="opacity: 0.7; font-size: 13px">
+      ไม่มีรายการ = ปุ่ม "ลงคิวเลย" เดิม, URL ขึ้นต้น / = หน้าในเว็บ (เช่น /register) นอกนั้นเปิดลิงก์ใหม่
+    </p>
+    @for (b of heroBtns(); track $index; let i = $index) {
+      <div class="m-row">
+        <input class="m-input" style="max-width: 180px" placeholder="ข้อความ (ไทย)" [value]="b.th"
+          (change)="updateHeroBtn(i, 'th', $any($event.target).value)" />
+        <input class="m-input" style="max-width: 180px" placeholder="Text (EN)" [value]="b.en"
+          (change)="updateHeroBtn(i, 'en', $any($event.target).value)" />
+        <input class="m-input" placeholder="/register หรือ https://..." [value]="b.url"
+          (change)="updateHeroBtn(i, 'url', $any($event.target).value)" />
+        <button class="m-btn" type="button" (click)="delHeroBtn(i)">ลบ</button>
+      </div>
+    }
+    <div class="m-row">
+      <button class="m-btn" type="button" (click)="addHeroBtn()">เพิ่มปุ่ม</button>
+    </div>
+
+    <h3>ฟีเจอร์</h3>
     <div class="m-row">
       <label>
-        <input
-          type="checkbox"
-          [checked]="!svc.settings().lanyardOff"
-          (change)="onLanyardToggle($event)"
-        />
-        แสดงบัตรห้อย 3D หน้าแรก
+        <input type="checkbox" [checked]="!svc.settings().charOff" (change)="onFlag('charOff', $event)" />
+        ตัวละคร (parallax) หน้าแรก
       </label>
     </div>
     <div class="m-row">
-      <label>รูปหน้าบัตร (URL, สัดส่วนการ์ดเกม 63x88mm แนวตั้ง, ครอบเต็มใบ)</label>
-      <input
-        #lanFront
-        class="m-input"
-        type="url"
-        placeholder="https://... (เว้นว่าง = โลโก้)"
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().charImgOff" (change)="onFlag('charImgOff', $event)" />
+        ใช้รูปตัวละครที่ตั้งเอง (ปิด = กลับไปใช้รูปเดิม โดยไม่ลบ URL)
+      </label>
+    </div>
+    <div class="m-row">
+      <label>รูปตัวละคร (URL, PNG พื้นหลังโปร่งแนะนำ)</label>
+      <input #charImg class="m-input" type="url" placeholder="https://... (เว้นว่าง = รูปเดิม)"
+        [value]="svc.settings().charImg || ''" (change)="svc.setCharImg(charImg.value)" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('charImg')">
+        เลือก/อัพโหลดรูป
+      </button>
+    </div>
+    <div class="m-row">
+      <label>ตำแหน่งตัวละคร X / Y (px, บวก = ขวา/ลง, ว่าง = 0)</label>
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="X"
+        [value]="svc.settings().charX ?? ''" (change)="setCharPos('charX', $any($event.target).value)" />
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="Y"
+        [value]="svc.settings().charY ?? ''" (change)="setCharPos('charY', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <label>แตะ/ลากบนแผ่นนี้ (กลาง = 0,0 / สุดขอบ = ±500px) — ปล่อยตรงไหน ค่านั้นถูกบันทึก</label>
+      <div class="xy-pad" (pointerdown)="padStart($event)" (pointermove)="padMove($event)"
+        (pointerup)="padEnd($event)" (pointercancel)="padEnd($event)">
+        <div class="xy-dot" [style.left.%]="padPos().x" [style.top.%]="padPos().y"></div>
+      </div>
+    </div>
+    <div class="m-row">
+      <label>ขนาดตัวละคร (%, ว่าง = 100)</label>
+      <input class="m-input" type="number" min="10" max="300" style="max-width: 120px" placeholder="100"
+        [value]="svc.settings().charScale ?? ''" (change)="setCharPos('charScale', $any($event.target).value)" />
+      <input type="range" min="10" max="300" step="5" style="flex: 1; max-width: 300px"
+        [value]="svc.settings().charScale ?? 100" (input)="onScaleSlide($any($event.target).value, false)"
+        (change)="onScaleSlide($any($event.target).value, true)" />
+      <span>{{ svc.settings().charScale ?? 100 }}%</span>
+    </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().schedOff" (change)="onFlag('schedOff', $event)" />
+        แผง Schedule Week หน้าแรก
+      </label>
+    </div>
+    <div class="m-row">
+      <label>คำที่ใช้ดักโพสต์ตาราง (หาในข้อความโพสต์ community, ไม่สนช่องว่าง/ตัวพิมพ์)</label>
+      <input class="m-input" placeholder="schedule week" [value]="svc.settings().schedKey ?? ''"
+        (change)="setText('schedKey', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <label>ข้อความบนแผงตาราง</label>
+      <input class="m-input" placeholder="Schedule Week (ไทย)" [value]="svc.settings().schedLabel ?? ''"
+        (change)="setText('schedLabel', $any($event.target).value)" />
+      <input class="m-input" placeholder="Schedule Week (EN)" [value]="svc.settings().schedLabelEn ?? ''"
+        (change)="setText('schedLabelEn', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().clipsOff" (change)="onFlag('clipsOff', $event)" />
+        คลิปล่าสุดจาก YouTube หน้าแรก
+      </label>
+    </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().statsOff" (change)="onFlag('statsOff', $event)" />
+        ยอด subscriber (ใน section คลิป)
+      </label>
+    </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().postsOff" (change)="onFlag('postsOff', $event)" />
+        โพสต์ community หน้าแรก
+      </label>
+    </div>
+    <h3>บัตรห้อย 3D</h3>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().lanyardOff" (change)="onFlag('lanyardOff', $event)" />
+        แสดงบัตรห้อย 3D หน้าแรก
+      </label>
+
+    </div>
+    <p>สัดส่วนการ์ดเกม 63x88mm แนวตั้ง, ครอบเต็มใบ</p>
+    <div class="m-row">
+      <label>รูปหน้าบัตร (URL)</label>
+      <input #lanFront class="m-input" type="url" placeholder="https://... (เว้นว่าง = โลโก้)"
         [value]="svc.settings().lanyardFront || ''"
-        (change)="svc.setLanyard({ lanyardFront: lanFront.value.trim() })"
-      />
-      <button
-        class="m-btn"
-        type="button"
-        [disabled]="!apiUp()"
-        [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
-        (click)="openPicker('lanyardFront')"
-      >
+        (change)="svc.setLanyard({ lanyardFront: lanFront.value.trim() })" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('lanyardFront')">
         เลือก/อัพโหลดรูป
       </button>
     </div>
     <div class="m-row">
       <label>รูปหลังบัตร (URL)</label>
-      <input
-        #lanBack
-        class="m-input"
-        type="url"
-        placeholder="https://... (เว้นว่าง = โลโก้)"
-        [value]="svc.settings().lanyardBack || ''"
-        (change)="svc.setLanyard({ lanyardBack: lanBack.value.trim() })"
-      />
-      <button
-        class="m-btn"
-        type="button"
-        [disabled]="!apiUp()"
-        [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
-        (click)="openPicker('lanyardBack')"
-      >
+      <input #lanBack class="m-input" type="url" placeholder="https://... (เว้นว่าง = โลโก้)"
+        [value]="svc.settings().lanyardBack || ''" (change)="svc.setLanyard({ lanyardBack: lanBack.value.trim() })" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('lanyardBack')">
         เลือก/อัพโหลดรูป
       </button>
     </div>
 
     @if (picker(); as pickField) {
-      <div class="pk-overlay" (click)="picker.set(null)">
-        <div class="pk-box" (click)="$event.stopPropagation()">
-          <div>
-            เลือกรูป{{ pickField === 'lanyardFront' ? 'หน้าบัตร' : 'หลังบัตร' }}
-            (จาก Google Drive folder)
-          </div>
-          <div>
-            <label class="m-btn" [style.opacity]="uploading() ? 0.5 : 1">
-              {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
-              <input type="file" accept="image/*" hidden [disabled]="uploading()" (change)="onUpload($event)" />
-            </label>
-          </div>
-          @if (pickerError()) {
-            <div class="pk-err">{{ pickerError() }}</div>
-          }
-          @if (gallery(); as imgs) {
-            <div class="pk-grid">
-              @for (img of imgs; track img.id) {
-                <img [src]="img.url" [alt]="img.name" [title]="img.name" (click)="pickImage(img.url)" />
-              } @empty {
-                <div>ยังไม่มีรูปใน folder</div>
-              }
-            </div>
-          } @else {
-            <div>กำลังโหลด...</div>
+    <div class="pk-overlay" (click)="picker.set(null)">
+      <div class="pk-box" (click)="$event.stopPropagation()">
+        <div>เลือกรูป{{ pickerLabel[pickField] }} (จาก Google Drive folder)</div>
+        <div>
+          <label class="m-btn" [style.opacity]="uploading() ? 0.5 : 1">
+            {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
+            <input type="file" accept="image/*" hidden [disabled]="uploading()" (change)="onUpload($event)" />
+          </label>
+        </div>
+        @if (pickerError()) {
+        <div class="pk-err">{{ pickerError() }}</div>
+        }
+        @if (gallery(); as imgs) {
+        <div class="pk-grid">
+          @for (img of imgs; track img.id) {
+          <img [src]="img.url" [alt]="img.name" [title]="img.name" (click)="pickImage(img.url)" />
+          } @empty {
+          <div>ยังไม่มีรูปใน folder</div>
           }
         </div>
+        } @else {
+        <div>กำลังโหลด...</div>
+        }
       </div>
+    </div>
     }
 
-    <div class="hp-label">ตัวอย่างหน้า home (หน้าจริง อัปเดตสด)</div>
-    <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">
-      <iframe
-        class="hp-frame"
-        src="/"
-        title="Home preview"
-        [style.width.px]="PREVIEW_W"
-        [style.height.px]="PREVIEW_H"
-        [style.transform]="'scale(' + scale() + ')'"
-      ></iframe>
-    </div>
   </section>
 </div>
+
+@if (previewOpen()) {
+  <div class="float-preview">
+    <div class="fp-head">
+      <span>ตัวอย่างหน้า home (สด)</span>
+      <button class="m-btn" type="button" (click)="togglePreview()">ซ่อน</button>
+    </div>
+    <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">
+      <iframe class="hp-frame" src="/" title="Home preview" [style.width.px]="PREVIEW_W" [style.height.px]="PREVIEW_H"
+        [style.transform]="'scale(' + scale() + ')'"></iframe>
+    </div>
+  </div>
+} @else {
+  <button class="m-btn fp-toggle" type="button" (click)="togglePreview()">ตัวอย่าง</button>
+}

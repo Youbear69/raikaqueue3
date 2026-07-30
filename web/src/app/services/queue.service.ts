@@ -47,13 +47,86 @@ export interface Settings {
   listOpacity: number;
   wrHidden?: string[]; // games whose win-rate cards are hidden (control + register)
   showHands?: boolean; // hands-holding-card overlay on register (when one card shown)
-  siteTitle?: string; // home hero title override
-  tagline?: string; // home tagline override
-  aboutText?: string; // nav About dropdown override
+  siteTitle?: string; // home hero title override (th)
+  siteTitleEn?: string; // home hero title override (en)
+  tagline?: string; // home tagline override (th)
+  taglineEn?: string; // home tagline override (en)
+  aboutText?: string; // nav About dropdown override (th)
+  aboutTextEn?: string; // nav About dropdown override (en)
   lanyardOff?: boolean; // hide the 3D lanyard badge on home
   lanyardFront?: string; // card front image URL (ID-1 ratio, cover-fit)
   lanyardBack?: string; // card back image URL
+  charOff?: boolean; // hide the hero character (parallax stack) on home
+  charImg?: string; // hero character image URL override (default assets/raika_2.png)
+  charImgOff?: boolean; // ignore charImg and use the default asset (URL kept for later)
+  charX?: number; // hero character offset px (+ = right)
+  charY?: number; // hero character offset px (+ = down)
+  charScale?: number; // hero character size percent (default 100)
+  schedOff?: boolean; // hide the schedule-week panel on home
+  schedKey?: string; // keyword that picks the schedule post (default "schedule week")
+  schedLabel?: string; // schedule panel tab text override (th, default "Schedule Week")
+  schedLabelEn?: string; // schedule panel tab text override (en)
+  heroButtons?: HeroButton[]; // home hero buttons (empty/unset = default join-queue button)
+  clipsOff?: boolean; // hide the latest-clips section on home
+  statsOff?: boolean; // hide the channel subscriber pill on home
+  postsOff?: boolean; // hide the community-posts section on home
+  regCharOff?: boolean; // hide the character on the register page
+  regCharImg?: string; // register character image override (default assets/raika_1.png)
+  regCharImgOff?: boolean; // ignore regCharImg (URL kept for later)
+  regCharX?: number; // register character offset px (+ = right)
+  regCharY?: number; // register character offset px (+ = down)
+  regCharScale?: number; // register character size percent (default 100)
+  regWrX?: number; // register win-rate panel offset px (+ = right)
+  regWrY?: number; // register win-rate panel offset px (+ = down)
+  regHandLeft?: string; // left hand image URL override (default crop of assets/hands.png)
+  regHandRight?: string; // right hand image URL override
+  regHandScale?: number; // both hands size percent (default 100)
+  regHandLX?: number; // left hand offset px (+ = right)
+  regHandLY?: number; // left hand offset px (+ = down)
+  regHandRX?: number; // right hand offset px (+ = right)
+  regHandRY?: number; // right hand offset px (+ = down)
+  navTitle?: string; // nav brand text override (default "Kerori Raika")
+  navLogo?: string; // nav logo image URL override (default assets/raika_1.png)
+  navXUrl?: string; // social link URL overrides (default = current links)
+  navYtUrl?: string;
+  navTwitchUrl?: string;
+  navDonateUrl?: string;
+  navDiscordUrl?: string;
+  navFeaturesOff?: boolean; // hide the ฟีเจอร์ dropdown
+  navAdminOff?: boolean; // hide the Admin dropdown (even for admins)
+  navFeatureItems?: HeroButton[]; // ฟีเจอร์ dropdown items (empty/unset = default join-queue link)
+  navXOff?: boolean; // hide individual social icons
+  navYtOff?: boolean;
+  navTwitchOff?: boolean;
+  navDonateOff?: boolean;
+  navDiscordOff?: boolean;
 }
+
+export interface HeroButton {
+  th: string; // label (Thai)
+  en: string; // label (English)
+  url: string; // "/path" = internal route, otherwise external link
+}
+
+// Feature on/off flags editable from the admin site-settings page
+export type FeatureFlag =
+  | 'lanyardOff'
+  | 'charOff'
+  | 'charImgOff'
+  | 'schedOff'
+  | 'clipsOff'
+  | 'statsOff'
+  | 'postsOff'
+  | 'regCharOff'
+  | 'regCharImgOff'
+  | 'navFeaturesOff'
+  | 'navAdminOff'
+  | 'navXOff'
+  | 'navYtOff'
+  | 'navTwitchOff'
+  | 'navDonateOff'
+  | 'navDiscordOff'
+  | 'showHands';
 
 const DEFAULT_SETTINGS: Settings = {
   activeGame: 'Cardfight Vanguard DD2',
@@ -179,6 +252,10 @@ export class QueueService {
   }
 
   async ensureAnonymousAuth(): Promise<void> {
+    // wait for the persisted session to restore first — checking currentUser too early
+    // would sign in anonymously OVER an existing Google session (shared storage,
+    // e.g. the admin preview iframe logging the whole site out)
+    await this.auth.authStateReady();
     if (!this.auth.currentUser) await signInAnonymously(this.auth);
   }
 
@@ -313,7 +390,29 @@ export class QueueService {
     update(ref(this.db, 'settings'), { wrHidden: next });
   }
 
-  setSiteText(patch: Partial<Pick<Settings, 'siteTitle' | 'tagline' | 'aboutText'>>): void {
+  setSiteText(
+    patch: Partial<
+      Pick<
+        Settings,
+        | 'siteTitle'
+        | 'siteTitleEn'
+        | 'tagline'
+        | 'taglineEn'
+        | 'aboutText'
+        | 'aboutTextEn'
+        | 'schedKey'
+        | 'schedLabel'
+        | 'schedLabelEn'
+        | 'navTitle'
+        | 'navLogo'
+        | 'navXUrl'
+        | 'navYtUrl'
+        | 'navTwitchUrl'
+        | 'navDonateUrl'
+        | 'navDiscordUrl'
+      >
+    >,
+  ): void {
     update(ref(this.db, 'settings'), patch);
   }
 
@@ -341,6 +440,89 @@ export class QueueService {
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || 'upload failed');
     return body;
+  }
+
+  async renameDriveImage(id: string, name: string): Promise<void> {
+    const u = this.user();
+    if (!u) throw new Error('not signed in');
+    const token = await u.getIdToken();
+    const r = await fetch(`${DRIVE_API}/file/${id}`, {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'rename failed');
+  }
+
+  async deleteDriveImage(id: string): Promise<void> {
+    const u = this.user();
+    if (!u) throw new Error('not signed in');
+    const token = await u.getIdToken();
+    const r = await fetch(`${DRIVE_API}/file/${id}`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'delete failed');
+  }
+
+  setFlag(patch: Partial<Pick<Settings, FeatureFlag>>): void {
+    update(ref(this.db, 'settings'), patch);
+  }
+
+  setCharPos(
+    patch: Partial<
+      Pick<
+        Settings,
+        | 'charX'
+        | 'charY'
+        | 'charScale'
+        | 'regCharX'
+        | 'regCharY'
+        | 'regCharScale'
+        | 'regWrX'
+        | 'regWrY'
+        | 'regHandScale'
+        | 'regHandLX'
+        | 'regHandLY'
+        | 'regHandRX'
+        | 'regHandRY'
+      >
+    >,
+  ): void {
+    update(ref(this.db, 'settings'), patch);
+  }
+
+  setRegCharImg(url: string): void {
+    let u = normalizeImageUrl(url.trim());
+    if (u.startsWith(DRIVE_API)) u += '?s=2500';
+    update(ref(this.db, 'settings'), { regCharImg: u || null });
+  }
+
+  setHandImg(field: 'regHandLeft' | 'regHandRight', url: string): void {
+    update(ref(this.db, 'settings'), { [field]: normalizeImageUrl(url.trim()) || null });
+  }
+
+  // Clears the given settings fields so their defaults apply again
+  resetSettings(fields: readonly (keyof Settings)[]): void {
+    const patch: Record<string, null> = {};
+    for (const f of fields) patch[f] = null;
+    update(ref(this.db, 'settings'), patch);
+  }
+
+  setHeroButtons(list: HeroButton[]): void {
+    update(ref(this.db, 'settings'), { heroButtons: list.length ? list : null });
+  }
+
+  setNavFeatureItems(list: HeroButton[]): void {
+    update(ref(this.db, 'settings'), { navFeatureItems: list.length ? list : null });
+  }
+
+  setCharImg(url: string): void {
+    // empty input clears the override (falls back to the default asset)
+    let u = normalizeImageUrl(url.trim());
+    // hero renders big — ask the image proxy for a larger size than its 1000px default
+    if (u.startsWith(DRIVE_API)) u += '?s=2500';
+    update(ref(this.db, 'settings'), { charImg: u || null });
   }
 
   setLanyard(patch: Partial<Pick<Settings, 'lanyardOff' | 'lanyardFront' | 'lanyardBack'>>): void {

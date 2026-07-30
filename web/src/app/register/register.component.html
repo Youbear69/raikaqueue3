@@ -160,14 +160,33 @@
   </div>
 }
 
-<div class="character-container">
-  <div class="char-wrap">
-    <span class="char-solid"></span>
-    <img src="assets/raika_1.png" alt="Kerori Raika Character" class="character-img" />
+@if (!svc.settings().regCharOff) {
+  <div
+    class="character-container"
+    [style.--reg-char-url]="'url(' + charImg() + ')'"
+    [style.--reg-x.px]="svc.settings().regCharX || 0"
+    [style.--reg-y.px]="svc.settings().regCharY || 0"
+    [style.--reg-scale]="(svc.settings().regCharScale || 100) / 100"
+  >
+    <div class="char-wrap">
+      <span class="char-solid"></span>
+      <img [src]="charImg()" alt="Kerori Raika Character" class="character-img" />
+    </div>
   </div>
-</div>
+}
 
-<div class="wr-float">
+<div
+  class="wr-float"
+  [style.--wr-x.px]="svc.settings().regWrX || 0"
+  [style.--wr-y.px]="svc.settings().regWrY || 0"
+  [style.--hand-left]="svc.settings().regHandLeft ? 'url(' + svc.settings().regHandLeft + ')' : null"
+  [style.--hand-right]="svc.settings().regHandRight ? 'url(' + svc.settings().regHandRight + ')' : null"
+  [style.--hand-scale]="(svc.settings().regHandScale || 100) / 100"
+  [style.--hand-lx.px]="svc.settings().regHandLX || 0"
+  [style.--hand-ly.px]="svc.settings().regHandLY || 0"
+  [style.--hand-rx.px]="svc.settings().regHandRX || 0"
+  [style.--hand-ry.px]="svc.settings().regHandRY || 0"
+>
   @if (svc.settings().showHands && svc.visibleWrGames().length === 1) {
     <span class="wr-hand left"></span>
     <span class="wr-hand right"></span>

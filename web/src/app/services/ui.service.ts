@@ -60,6 +60,11 @@ export class UiService {
 
   readonly t = computed(() => T[this.lang()]);
 
+  // Pick the admin-set text for the current language, falling back to the other
+  pick(th?: string | null, en?: string | null): string {
+    return (this.lang() === 'en' ? en || th : th || en) || '';
+  }
+
   constructor() {
     effect(() => localStorage.setItem('ui_lang', this.lang()));
     effect(() => {

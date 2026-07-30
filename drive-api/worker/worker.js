@@ -4,9 +4,12 @@
 // absorbed by the cache.
 export default {
   async fetch(req) {
-    const m = new URL(req.url).pathname.match(/^\/i\/([\w-]+)$/);
+    const url = new URL(req.url);
+    const m = url.pathname.match(/^\/i\/([\w-]+)$/);
     if (!m) return new Response('not found', { status: 404 });
-    const r = await fetch(`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`, {
+    // ?s=<width> for larger renders (hero character), default 1000
+    const s = Math.min(4000, Math.max(100, Number(url.searchParams.get('s')) || 1000));
+    const r = await fetch(`https://drive.google.com/thumbnail?id=${m[1]}&sz=w${s}`, {
       redirect: 'follow',
       cf: { cacheEverything: true, cacheTtl: 604800 },
     });

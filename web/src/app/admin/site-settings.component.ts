@@ -7,7 +7,32 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { QueueService } from '../services/queue.service';
+import { FeatureFlag, HeroButton, QueueService, Settings } from '../services/queue.service';
+
+// Fields the reset button clears (home-page settings only)
+const HOME_FIELDS: readonly (keyof Settings)[] = [
+  'siteTitle',
+  'siteTitleEn',
+  'tagline',
+  'taglineEn',
+  'schedKey',
+  'schedLabel',
+  'schedLabelEn',
+  'heroButtons',
+  'charOff',
+  'charImg',
+  'charImgOff',
+  'charX',
+  'charY',
+  'charScale',
+  'schedOff',
+  'clipsOff',
+  'statsOff',
+  'postsOff',
+  'lanyardOff',
+  'lanyardFront',
+  'lanyardBack',
+];
 import { DRIVE_API, DriveImage } from '../shared/drive-url';
 
 @Component({
@@ -16,6 +41,16 @@ import { DRIVE_API, DriveImage } from '../shared/drive-url';
   // Reuses the master page styles (cards, rows, home preview)
   styleUrl: '../master/master.component.css',
   styles: `
+    .master-container {
+      max-width: none;
+      margin: 0;
+      padding-right: 540px; /* keep clear of the floating preview */
+    }
+    @media (max-width: 1500px) {
+      .master-container {
+        padding-right: 20px;
+      }
+    }
     .pk-overlay {
       position: fixed;
       inset: 0;
@@ -59,6 +94,53 @@ import { DRIVE_API, DriveImage } from '../shared/drive-url';
       opacity: 0.5;
       cursor: not-allowed;
     }
+    .xy-pad {
+      width: 220px;
+      height: 220px;
+      border: 1px solid rgba(128, 128, 128, 0.4);
+      border-radius: 10px;
+      position: relative;
+      touch-action: none;
+      cursor: crosshair;
+      background:
+        linear-gradient(to right, transparent 49.5%, rgba(128, 128, 128, 0.35) 49.5%, rgba(128, 128, 128, 0.35) 50.5%, transparent 50.5%),
+        linear-gradient(to bottom, transparent 49.5%, rgba(128, 128, 128, 0.35) 49.5%, rgba(128, 128, 128, 0.35) 50.5%, transparent 50.5%);
+    }
+    .xy-dot {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #7aa66f;
+      border: 2px solid #fff;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .float-preview {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(480px, 42vw);
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(128, 128, 128, 0.4);
+      border-radius: 12px;
+      padding: 8px;
+    }
+    .fp-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .fp-toggle {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 40;
+    }
   `,
 })
 export class SiteSettingsComponent implements AfterViewInit {
@@ -69,6 +151,19 @@ export class SiteSettingsComponent implements AfterViewInit {
   readonly PREVIEW_H = 1080;
   readonly scale = signal(0.4);
   private wrap = viewChild<ElementRef<HTMLElement>>('wrap');
+
+  reset(): void {
+    if (confirm('ล้างการตั้งค่าหน้า home ทั้งหมด กลับเป็นค่าเริ่มต้น?')) {
+      this.svc.resetSettings(HOME_FIELDS);
+    }
+  }
+
+  readonly previewOpen = signal(true);
+
+  togglePreview(): void {
+    this.previewOpen.set(!this.previewOpen());
+    setTimeout(() => this.updateScale());
+  }
 
   ngAfterViewInit(): void {
     this.updateScale();
@@ -91,24 +186,120 @@ export class SiteSettingsComponent implements AfterViewInit {
   }
 
   // Empty input clears the override (falls back to the default text)
-  setText(field: 'siteTitle' | 'tagline' | 'aboutText', value: string): void {
+  setText(
+    field:
+      | 'siteTitle'
+      | 'siteTitleEn'
+      | 'tagline'
+      | 'taglineEn'
+      | 'aboutText'
+      | 'aboutTextEn'
+      | 'schedKey'
+      | 'schedLabel'
+      | 'schedLabelEn',
+    value: string,
+  ): void {
     this.svc.setSiteText({ [field]: value.trim() || null } as never);
   }
 
-  onLanyardToggle(e: Event): void {
-    this.svc.setLanyard({ lanyardOff: !(e.target as HTMLInputElement).checked });
+  // ---- hero buttons (empty list = default join-queue button) ----
+  heroBtns(): HeroButton[] {
+    return this.svc.settings().heroButtons ?? [];
+  }
+
+  addHeroBtn(): void {
+    this.svc.setHeroButtons([...this.heroBtns(), { th: '', en: '', url: '/register' }]);
+  }
+
+  delHeroBtn(i: number): void {
+    this.svc.setHeroButtons(this.heroBtns().filter((_, idx) => idx !== i));
+  }
+
+  updateHeroBtn(i: number, field: 'th' | 'en' | 'url', value: string): void {
+    const list = this.heroBtns().map((b, idx) => (idx === i ? { ...b, [field]: value.trim() } : b));
+    this.svc.setHeroButtons(list);
+  }
+
+  setCharPos(field: 'charX' | 'charY' | 'charScale', value: string): void {
+    const n = parseInt(value, 10);
+    this.svc.setCharPos({ [field]: isNaN(n) ? null : n } as never);
+  }
+
+  // ---- XY pad: tap or drag, pointer position maps straight to the offset ----
+  readonly PAD_R = 500; // px range each direction
+  private padDragging = false;
+  private padLastWrite = 0;
+
+  padPos(): { x: number; y: number } {
+    const c = (v: number | undefined) => Math.max(-this.PAD_R, Math.min(this.PAD_R, v || 0));
+    const s = this.svc.settings();
+    return {
+      x: ((c(s.charX) / this.PAD_R + 1) / 2) * 100,
+      y: ((c(s.charY) / this.PAD_R + 1) / 2) * 100,
+    };
+  }
+
+  padStart(e: PointerEvent): void {
+    this.padDragging = true;
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    this.padApply(e, true);
+  }
+
+  padMove(e: PointerEvent): void {
+    if (this.padDragging) this.padApply(e, false);
+  }
+
+  padEnd(e: PointerEvent): void {
+    if (!this.padDragging) return;
+    this.padDragging = false;
+    // wherever the pointer is released becomes the saved position
+    this.padApply(e, true);
+  }
+
+  private padApply(e: PointerEvent, force: boolean): void {
+    // throttle RTDB writes while dragging
+    const now = Date.now();
+    if (!force && now - this.padLastWrite < 100) return;
+    this.padLastWrite = now;
+    const rect = (e.currentTarget as Element).getBoundingClientRect();
+    const fx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const fy = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const x = Math.round((fx * 2 - 1) * this.PAD_R);
+    const y = Math.round((fy * 2 - 1) * this.PAD_R);
+    this.svc.setCharPos({ charX: x || null, charY: y || null } as never);
+  }
+
+  // scale slider: throttled while sliding, final value on release
+  onScaleSlide(value: string, force: boolean): void {
+    const now = Date.now();
+    if (!force && now - this.padLastWrite < 100) return;
+    this.padLastWrite = now;
+    const n = parseInt(value, 10);
+    this.svc.setCharPos({ charScale: isNaN(n) || n === 100 ? null : n } as never);
+  }
+
+  // checkbox = "แสดง"; most flags are stored inverted (xxxOff), showHands is direct
+  onFlag(field: FeatureFlag, e: Event): void {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.svc.setFlag({ [field]: field === 'showHands' ? checked : !checked } as never);
   }
 
   // ---- Drive image picker (lanyard card front/back) ----
   // Buttons stay disabled until the drive-api server answers (it may be offline;
   // the /i/ image proxy is a separate Cloudflare Worker and keeps working)
   readonly apiUp = signal(false);
-  readonly picker = signal<'lanyardFront' | 'lanyardBack' | null>(null);
+  readonly picker = signal<'lanyardFront' | 'lanyardBack' | 'charImg' | null>(null);
   readonly gallery = signal<DriveImage[] | null>(null); // null = loading
   readonly uploading = signal(false);
   readonly pickerError = signal('');
 
-  async openPicker(field: 'lanyardFront' | 'lanyardBack'): Promise<void> {
+  readonly pickerLabel: Record<string, string> = {
+    lanyardFront: 'หน้าบัตร',
+    lanyardBack: 'หลังบัตร',
+    charImg: 'ตัวละคร',
+  };
+
+  async openPicker(field: 'lanyardFront' | 'lanyardBack' | 'charImg'): Promise<void> {
     this.picker.set(field);
     this.pickerError.set('');
     this.gallery.set(null);
@@ -122,7 +313,8 @@ export class SiteSettingsComponent implements AfterViewInit {
 
   pickImage(url: string): void {
     const f = this.picker();
-    if (f) this.svc.setLanyard({ [f]: url });
+    if (f === 'charImg') this.svc.setCharImg(url);
+    else if (f) this.svc.setLanyard({ [f]: url });
     this.picker.set(null);
   }
 

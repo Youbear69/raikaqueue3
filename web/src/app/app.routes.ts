@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
 import { AdminLayoutComponent } from './admin/admin-layout.component';
+import { ImagesComponent } from './admin/images.component';
+import { NavSettingsComponent } from './admin/nav-settings.component';
+import { RegisterSettingsComponent } from './admin/register-settings.component';
 import { SiteSettingsComponent } from './admin/site-settings.component';
 import { ControlComponent } from './control/control.component';
 import { HomeComponent } from './home/home.component';
@@ -20,6 +23,9 @@ export const routes: Routes = [
       { path: 'control', component: ControlComponent },
       { path: 'master', component: MasterComponent },
       { path: 'settings', component: SiteSettingsComponent },
+      { path: 'register-settings', component: RegisterSettingsComponent },
+      { path: 'nav-settings', component: NavSettingsComponent },
+      { path: 'images', component: ImagesComponent },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,0 +1,78 @@
+<div class="master-card">
+  <h3>จัดการรูป</h3>
+  <p style="opacity: 0.7; font-size: 13px">
+    รูปทั้งหมดในโฟลเดอร์ raika-img-uploads บน Google Drive — อัพโหลดที่นี่หรือลากใส่โฟลเดอร์ใน Drive
+    ก็ได้ กดก็อป URL แล้วเอาไปวางช่องรูปได้ทุกที่
+  </p>
+
+  <div class="m-row">
+    <label class="m-btn" [style.opacity]="uploading() || !apiUp() ? 0.5 : 1">
+      {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        [disabled]="uploading() || !apiUp()"
+        (change)="onUpload($event)"
+      />
+    </label>
+    <button class="m-btn" type="button" [disabled]="!apiUp()" (click)="refresh()">รีเฟรช</button>
+  </div>
+
+  <div class="m-row">
+    <input
+      class="m-input"
+      type="search"
+      placeholder="ค้นหาชื่อรูป..."
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+    />
+  </div>
+
+  @if (err()) {
+    <div class="im-err">{{ err() }}</div>
+  }
+
+  @if (filtered(); as imgs) {
+    <div class="im-grid">
+      @for (img of imgs; track img.id) {
+        <div class="im-card">
+          <img [src]="img.url" [alt]="img.name" loading="lazy" (click)="viewUrl.set(img.url)" />
+          @if (renamingId() === img.id) {
+            <input
+              class="m-input im-rename"
+              type="text"
+              [value]="img.name"
+              (keydown.enter)="rename(img, $any($event.target).value)"
+              (keydown.escape)="renamingId.set('')"
+              (blur)="rename(img, $any($event.target).value)"
+              autofocus
+            />
+          } @else {
+            <div class="im-name" [title]="img.name + ' (คลิกเพื่อเปลี่ยนชื่อ)'" (click)="renamingId.set(img.id)">
+              {{ img.name }}
+            </div>
+          }
+          <div class="im-actions">
+            <button class="m-btn" type="button" (click)="copy(img)">
+              {{ copiedId() === img.id ? 'ก็อปแล้ว' : 'ก็อป URL' }}
+            </button>
+            <button class="m-btn im-del" type="button" (click)="remove(img)">
+              {{ armedId() === img.id ? 'ยืนยันลบ?' : 'ลบ' }}
+            </button>
+          </div>
+        </div>
+      } @empty {
+        <div class="m-empty">{{ query() ? 'ไม่พบรูปที่ค้นหา' : 'ยังไม่มีรูป' }}</div>
+      }
+    </div>
+  } @else {
+    <div>กำลังโหลด...</div>
+  }
+</div>
+
+@if (viewUrl(); as v) {
+  <div class="im-view" (click)="viewUrl.set(null)">
+    <img [src]="v" alt="" />
+  </div>
+}

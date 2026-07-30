@@ -46,6 +46,7 @@ const app = express();
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Headers', 'authorization, content-type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -71,9 +72,10 @@ async function requireAdmin(req, res, next) {
 
 app.get('/i/:id', async (req, res) => {
   if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).end();
+  const s = Math.min(4000, Math.max(100, Number(req.query.s) || 1000));
   try {
     const r = await fetch(
-      `https://drive.google.com/thumbnail?id=${req.params.id}&sz=w1000`,
+      `https://drive.google.com/thumbnail?id=${req.params.id}&sz=w${s}`,
       { redirect: 'follow' },
     );
     if (!r.ok) return res.status(r.status).end();
@@ -112,6 +114,32 @@ app.post('/upload', requireAdmin, up.single('file'), async (req, res) => {
     res.json({ id: r.data.id, name: req.file.originalname, url: thumbUrl(r.data.id) });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+app.patch('/file/:id', requireAdmin, express.json(), async (req, res) => {
+  if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).json({ error: 'bad id' });
+  if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
+  const name = String(req.body?.name || '').trim();
+  if (!name || name.length > 100) return res.status(400).json({ error: 'bad name' });
+  try {
+    await oauthDrive.files.update({ fileId: req.params.id, requestBody: { name } });
+    res.json({ ok: true, name });
+  } catch (e) {
+    // drive.file scope can't touch files added by hand in Drive
+    res.status(e.code === 404 ? 404 : 500).json({ error: e.message });
+  }
+});
+
+app.delete('/file/:id', requireAdmin, async (req, res) => {
+  if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).json({ error: 'bad id' });
+  if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
+  try {
+    await oauthDrive.files.delete({ fileId: req.params.id });
+    res.json({ ok: true });
+  } catch (e) {
+    // drive.file scope can't touch files added by hand in Drive — delete those in the Drive app
+    res.status(e.code === 404 ? 404 : 500).json({ error: e.message });
   }
 });
 

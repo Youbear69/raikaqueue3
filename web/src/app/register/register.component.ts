@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
 import { SiteNavComponent } from '../shared/site-nav/site-nav.component';
 import { QueueService } from '../services/queue.service';
-import { normalizeImageUrl } from '../shared/drive-url';
+import { DRIVE_API, normalizeImageUrl } from '../shared/drive-url';
 
 @Component({
   selector: 'register-page',
@@ -13,6 +13,14 @@ import { normalizeImageUrl } from '../shared/drive-url';
 export class RegisterComponent implements OnInit {
   readonly svc = inject(QueueService);
   readonly viewPhoto = signal<string | null>(null);
+
+  // Admin-set character image (default asset); big render = ask proxy for 2500px
+  readonly charImg = computed(() => {
+    const s = this.svc.settings();
+    const u = s.regCharImgOff ? '' : s.regCharImg;
+    if (!u) return 'assets/raika_1.png';
+    return u.startsWith(DRIVE_API) && !u.includes('?') ? `${u}?s=2500` : u;
+  });
   // Win-rate card view: Raika's record or the signed-in user's own record
   readonly statView = signal<'raika' | 'me'>('raika');
 

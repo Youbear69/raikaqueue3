@@ -4,25 +4,40 @@
 <div class="upper">
 <div class="landing">
 <main class="hero">
-  <h1 class="hero-title">{{ svc.settings().siteTitle || 'Kerori Raika' }}</h1>
-  <p class="hero-tagline">{{ svc.settings().tagline || ui.t().tagline }}</p>
+  <h1 class="hero-title">
+    {{ ui.pick(svc.settings().siteTitle, svc.settings().siteTitleEn) || 'Kerori Raika' }}
+  </h1>
+  <p class="hero-tagline">
+    {{ ui.pick(svc.settings().tagline, svc.settings().taglineEn) || ui.t().tagline }}
+  </p>
   <div class="hero-buttons">
-    <a routerLink="/register" class="hero-btn primary">{{ ui.t().joinQueue }}</a>
+    @for (b of heroButtons(); track $index) {
+      @if (b.url.startsWith('/')) {
+        <a [routerLink]="b.url" class="hero-btn primary">{{ btnLabel(b) }}</a>
+      } @else {
+        <a [href]="b.url" target="_blank" rel="noopener" class="hero-btn primary">{{ btnLabel(b) }}</a>
+      }
+    }
   </div>
 </main>
 
-<div
-  class="char-stack"
-  [style.--char-url]="'url(' + img() + ')'"
-  [style.--mx]="mx()"
-  [style.--my]="my()"
->
-  <div class="char-layer layer-3"></div>
-  <div class="char-layer layer-2"></div>
-  <img class="char-front" [src]="img()" alt="Kerori Raika" />
-</div>
+@if (!svc.settings().charOff) {
+  <div
+    class="char-stack"
+    [style.--char-url]="'url(' + img() + ')'"
+    [style.--char-x.px]="svc.settings().charX || 0"
+    [style.--char-y.px]="svc.settings().charY || 0"
+    [style.--char-scale]="(svc.settings().charScale || 100) / 100"
+    [style.--mx]="mx()"
+    [style.--my]="my()"
+  >
+    <div class="char-layer layer-3"></div>
+    <div class="char-layer layer-2"></div>
+    <img class="char-front" [src]="img()" alt="Kerori Raika" />
+  </div>
+}
 
-@if (schedule(); as sc) {
+@if (!svc.settings().schedOff && schedule(); as sc) {
   <div class="sched-panel" [class.open]="schedOpen()">
     <img
       class="sched-img"
@@ -42,7 +57,9 @@
       >
         <path d="M9 6l6 6-6 6" />
       </svg>
-      <span class="sched-label">Schedule Week</span>
+      <span class="sched-label">
+        {{ ui.pick(svc.settings().schedLabel, svc.settings().schedLabelEn) || 'Schedule Week' }}
+      </span>
     </button>
   </div>
 }
@@ -54,10 +71,11 @@
 }
 </div>
 
+@if (!svc.settings().clipsOff) {
 <section class="clips-section">
   <div class="clips-head">
     <h2>{{ ui.t().latestClips }}</h2>
-    @if (subs() !== null) {
+    @if (subs() !== null && !svc.settings().statsOff) {
       <a
         class="hero-subs"
         href="https://www.youtube.com/@keroriRaika"
@@ -102,8 +120,9 @@
     ></iframe>
   }
 </section>
+}
 
-@if (posts().length) {
+@if (posts().length && !svc.settings().postsOff) {
   <section class="clips-section post-section">
     <div class="clips-head">
       <h2>{{ ui.t().latestPost }}</h2>

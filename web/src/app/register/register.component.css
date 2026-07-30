@@ -100,6 +100,9 @@
    image itself, so the silhouette always matches the rendered image. */
 .character-container {
   position: fixed;
+  /* admin-set offset + size from register settings */
+  transform: translate(var(--reg-x, 0px), var(--reg-y, 0px)) scale(var(--reg-scale, 1));
+  transform-origin: 100% 100%;
 }
 
 .char-wrap {
@@ -114,8 +117,8 @@
   position: absolute;
   inset: 0;
   background: var(--bg-color);
-  -webkit-mask: url('/assets/raika_1.png') no-repeat center bottom / 100% auto;
-  mask: url('/assets/raika_1.png') no-repeat center bottom / 100% auto;
+  -webkit-mask: var(--reg-char-url, url('/assets/raika_1.png')) no-repeat center bottom / 100% auto;
+  mask: var(--reg-char-url, url('/assets/raika_1.png')) no-repeat center bottom / 100% auto;
 }
 
 .character-img {
@@ -261,6 +264,8 @@
   bottom: 24px;
   z-index: 7;
   width: min(680px, 46vw);
+  /* admin-set offset from register settings */
+  transform: translate(var(--wr-x, 0px), var(--wr-y, 0px));
 }
 
 .wr-float .wr-card {
@@ -291,11 +296,18 @@
 .wr-hand.left {
   left: -26px;
   background-position: left center;
+  /* admin-set image / offset / size from register settings */
+  background-image: var(--hand-left, url('/assets/hands.png'));
+  transform: translateY(-50%) translate(var(--hand-lx, 0px), var(--hand-ly, 0px))
+    scale(var(--hand-scale, 1));
 }
 
 .wr-hand.right {
   right: -26px;
   background-position: right center;
+  background-image: var(--hand-right, url('/assets/hands.png'));
+  transform: translateY(-50%) translate(var(--hand-rx, 0px), var(--hand-ry, 0px))
+    scale(var(--hand-scale, 1));
 }
 
 /* Narrow screens: character would cover the form - hide it, cards back in flow */
