@@ -85,6 +85,7 @@ export interface Settings {
   regHandLY?: number; // left hand offset px (+ = down)
   regHandRX?: number; // right hand offset px (+ = right)
   regHandRY?: number; // right hand offset px (+ = down)
+  giveFolder?: string; // Drive folder id whose images show on the public /gallery page
   navTitle?: string; // nav brand text override (default "Kerori Raika")
   navLogo?: string; // nav logo image URL override (default assets/raika_1.png)
   navXUrl?: string; // social link URL overrides (default = current links)
@@ -546,6 +547,10 @@ export class QueueService {
 
   setHeroButtons(list: HeroButton[]): void {
     update(ref(this.db, 'settings'), { heroButtons: list.length ? list : null });
+  }
+
+  setGiveFolder(id: string | null): void {
+    update(ref(this.db, 'settings'), { giveFolder: id || null });
   }
 
   setNavFeatureItems(list: HeroButton[]): void {

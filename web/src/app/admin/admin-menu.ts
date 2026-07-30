@@ -11,5 +11,6 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { label: 'ตั้งค่าเว็บ (หน้า home)', path: '/settings' },
   { label: 'ตั้งค่าหน้า register', path: '/register-settings' },
   { label: 'ตั้งค่า site-nav', path: '/nav-settings' },
+  { label: 'ตั้งค่าหน้ารูปแจก', path: '/gallery-settings' },
   { label: 'จัดการรูป', path: '/images' },
 ];

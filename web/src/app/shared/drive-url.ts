@@ -10,6 +10,7 @@ export interface DriveImage {
 export interface DriveFolder {
   id: string;
   name: string;
+  thumb?: string; // newest image inside, for the Explorer-style folder preview
 }
 
 export interface DriveListing {

@@ -172,12 +172,14 @@ export class SiteSettingsComponent implements AfterViewInit {
 
   private async checkApi(): Promise<void> {
     try {
-      const r = await fetch(`${DRIVE_API}/list`, { signal: AbortSignal.timeout(5000) });
-      this.apiUp.set(r.ok);
+      // via the service so the folder list lands in the shared cache too
+      await this.svc.listDriveImages();
+      this.apiUp.set(true);
     } catch {
       this.apiUp.set(false);
     }
   }
+
 
   @HostListener('window:resize')
   updateScale(): void {
@@ -311,13 +313,18 @@ export class SiteSettingsComponent implements AfterViewInit {
     await this.loadGallery();
   }
 
+  private galSeq = 0;
+
   private async loadGallery(): Promise<void> {
+    const seq = ++this.galSeq;
     this.pickerError.set('');
     // cached listing shows instantly; fresh data replaces it in the background
     this.gallery.set(this.svc.cachedDriveListing(this.pickFolder()?.id));
     try {
-      this.gallery.set(await this.svc.listDriveImages(this.pickFolder()?.id));
+      const data = await this.svc.listDriveImages(this.pickFolder()?.id);
+      if (seq === this.galSeq) this.gallery.set(data);
     } catch {
+      if (seq !== this.galSeq) return;
       if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
       this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
     }

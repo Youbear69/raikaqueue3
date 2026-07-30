@@ -2,6 +2,7 @@ import { Component, HostListener, computed, inject, signal } from '@angular/core
 import { QueueService } from '../services/queue.service';
 import { DriveFolder, DriveImage, DriveListing } from '../shared/drive-url';
 import { GifThumbComponent } from '../shared/gif-thumb.component';
+import { downloadImages } from '../shared/download-images';
 
 @Component({
   selector: 'images-page',
@@ -81,10 +82,27 @@ import { GifThumbComponent } from '../shared/gif-thumb.component';
     .ex-tile[draggable='true'] {
       cursor: grab;
     }
-    .f-icon {
+    .f-wrap {
+      position: relative;
       width: 92px;
       height: 92px;
       cursor: pointer;
+    }
+    .f-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .f-prev {
+      position: absolute;
+      left: 14%;
+      top: 13%;
+      width: 72%;
+      height: 52%;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
     }
     .ex-name {
       font-size: 12px;
@@ -441,11 +459,18 @@ export class ImagesComponent {
     this.log.update((l) => [{ t, msg, ok }, ...l].slice(0, 12));
   }
 
+  // guards against a slow response for a folder we already navigated away from
+  private reqSeq = 0;
+
   // silent re-fetch: syncs listing + cache without flashing a loading state
   private async sync(): Promise<void> {
+    const seq = ++this.reqSeq;
     try {
-      this.listing.set(await this.svc.listDriveImages(this.curFolder()?.id));
-      this.apiUp.set(true);
+      const data = await this.svc.listDriveImages(this.curFolder()?.id);
+      if (seq === this.reqSeq) {
+        this.listing.set(data);
+        this.apiUp.set(true);
+      }
     } catch {
       // optimistic state stays; next refresh() will surface connection errors
     }
@@ -532,14 +557,18 @@ export class ImagesComponent {
   }
 
   async refresh(): Promise<void> {
+    const seq = ++this.reqSeq;
     this.clearSelect();
     // show the cached listing instantly; "กำลังโหลด" only on the first visit
     this.listing.set(this.svc.cachedDriveListing(this.curFolder()?.id));
     this.err.set('');
     try {
-      this.listing.set(await this.svc.listDriveImages(this.curFolder()?.id));
+      const data = await this.svc.listDriveImages(this.curFolder()?.id);
+      if (seq !== this.reqSeq) return; // navigated elsewhere while loading
+      this.listing.set(data);
       this.apiUp.set(true);
     } catch {
+      if (seq !== this.reqSeq) return;
       if (!this.listing()) this.listing.set({ folders: [], images: [] });
       this.apiUp.set(false);
       this.err.set('เชื่อมต่อเซิร์ฟเวอร์รูปไม่ได้');
@@ -631,25 +660,13 @@ export class ImagesComponent {
     return this.ctxIds().length;
   }
 
-  // ---- download (blob via the CORS proxy, ?s=4000 = original resolution) ----
-  private async downloadOne(img: DriveImage): Promise<void> {
-    try {
-      const r = await fetch(`${img.url}?s=4000`);
-      if (!r.ok) throw new Error(String(r.status));
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(await r.blob());
-      a.download = img.name;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      this.addLog(`ดาวน์โหลด "${img.name}"`);
-    } catch {
-      this.addLog(`ดาวน์โหลด "${img.name}" ไม่สำเร็จ`, false);
-    }
-  }
-
+  // ---- download: single file as-is, multiple bundled into one zip ----
   private async downloadIds(ids: string[]): Promise<void> {
     const imgs = (this.listing()?.images ?? []).filter((i) => ids.includes(i.id));
-    for (const img of imgs) await this.downloadOne(img);
+    if (!imgs.length) return;
+    await downloadImages(imgs, 'raika-images.zip', (name, ok) =>
+      this.addLog(ok ? `ดาวน์โหลด "${name}"` : `ดาวน์โหลด "${name}" ไม่สำเร็จ`, ok),
+    );
   }
 
   async downloadSelected(): Promise<void> {

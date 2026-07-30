@@ -1,0 +1,27 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>ตั้งค่าหน้ารูปแจก</h1>
+    <button class="m-btn" type="button" (click)="reset()">ล้างการตั้งค่า (ค่าเริ่มต้น)</button>
+  </header>
+
+  <section class="master-card settings-card">
+    <h3>โฟลเดอร์รูปแจก</h3>
+    <p style="opacity: 0.7; font-size: 13px">
+      รูปในโฟลเดอร์นี้จะแสดงบนหน้า /gallery ให้ทุกคนก็อป URL / ดาวน์โหลดได้ —
+      สร้างและจัดรูปเข้าโฟลเดอร์ได้ในหน้า จัดการรูป
+    </p>
+    <div class="m-row">
+      <select class="m-input" style="max-width: 320px; flex: none"
+        (change)="svc.setGiveFolder($any($event.target).value || null)">
+        <option value="" [selected]="!svc.settings().giveFolder">ไม่แสดง (ปิดหน้าแจก)</option>
+        @for (f of folders(); track f.id) {
+          <option [value]="f.id" [selected]="f.id === svc.settings().giveFolder">{{ f.name }}</option>
+        }
+      </select>
+      @if (!apiUp()) {
+        <span style="color: #c0392b">เชื่อมต่อเซิร์ฟเวอร์รูปไม่ได้</span>
+      }
+      <a class="m-btn" href="/gallery" target="_blank" rel="noopener">เปิดหน้า /gallery</a>
+    </div>
+  </section>
+</div>

@@ -115,6 +115,22 @@ app.get('/list', async (req, res) => {
       if (f.mimeType === 'application/vnd.google-apps.folder') folders.push({ id: f.id, name: f.name });
       else images.push({ id: f.id, name: f.name, url: thumbUrl(f.id) });
     }
+    // folder preview: newest image inside each folder (folder count is small)
+    await Promise.all(
+      folders.map(async (f) => {
+        try {
+          const c = await drive.files.list({
+            q: `'${f.id}' in parents and mimeType contains 'image/' and trashed=false`,
+            fields: 'files(id)',
+            orderBy: 'createdTime desc',
+            pageSize: 1,
+          });
+          if (c.data.files[0]) f.thumb = thumbUrl(c.data.files[0].id);
+        } catch {
+          // no preview
+        }
+      }),
+    );
     res.json({ folders, images });
   } catch (e) {
     res.status(500).json({ error: e.message });

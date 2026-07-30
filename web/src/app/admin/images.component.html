@@ -60,11 +60,18 @@
         @for (f of filteredFolders(); track f.id) {
           <div class="ex-tile" [class.drop-hot]="dropTarget() === f.id" (dragover)="allowDrop($event, f.id)"
             (dragleave)="dragLeave(f.id)" (drop)="onDrop($event, f.id)" (contextmenu)="openCtx($event, f, true)">
-            <svg class="f-icon" viewBox="0 0 48 48" (dblclick)="openFolder(f)" (click)="$event.stopPropagation()">
-              <path fill="#eac355"
-                d="M40 12H22.8l-3.4-3.4A2 2 0 0 0 18 8H8a4 4 0 0 0-4 4v24a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4V16a4 4 0 0 0-4-4z" />
-              <path fill="#f6d57a" d="M44 20H4v16a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4z" />
-            </svg>
+            <div class="f-wrap" (dblclick)="openFolder(f)" (click)="$event.stopPropagation()">
+              <svg class="f-layer" viewBox="0 0 48 48">
+                <path fill="#d9a942"
+                  d="M40 12H22.8l-3.4-3.4A2 2 0 0 0 18 8H8a4 4 0 0 0-4 4v24a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4V16a4 4 0 0 0-4-4z" />
+              </svg>
+              @if (f.thumb) {
+                <img class="f-prev" [src]="f.thumb" alt="" loading="lazy" />
+              }
+              <svg class="f-layer" viewBox="0 0 48 48">
+                <path fill="#f6d57a" d="M44 22H4v14a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4z" />
+              </svg>
+            </div>
             @if (renamingId() === f.id) {
               <input class="m-input ex-rename" type="text" [value]="f.name"
                 (keydown.enter)="rename(f, $any($event.target).value)" (keydown.escape)="renamingId.set('')"

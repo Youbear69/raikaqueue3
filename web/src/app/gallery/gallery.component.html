@@ -1,0 +1,69 @@
+<site-bg />
+<site-nav />
+
+<main class="gal-page">
+  <h1 class="gal-title">รูปแจกจาก Kerori Raika</h1>
+  <p class="gal-hint">
+    นำไปใช้ได้ฟรีทุกรูป — คลิก = เลือก, Ctrl/Shift+คลิก หรือลากคลุม = เลือกหลายรูป, Ctrl+A =
+    เลือกทั้งหมด, ดับเบิลคลิก = ดูเต็มจอ, คลิกขวา = เมนู (ดาวน์โหลดมากกว่า 1 รูปได้เป็น .zip)
+  </p>
+
+  @if (!svc.settings().giveFolder) {
+    <p class="gal-empty">ยังไม่มีรูปแจกในตอนนี้</p>
+  } @else if (listing(); as l) {
+    <div class="gal-grid" (click)="gridClick($event)" (pointerdown)="gridDown($event)"
+      (pointermove)="gridMove($event)" (pointerup)="gridUp()" (pointercancel)="gridUp()">
+      @for (img of l.images; track img.id; let i = $index) {
+        <div class="gal-tile" [attr.data-id]="img.id" [class.sel]="selected().has(img.id)"
+          (click)="onTileClick($event, img, i)" (dblclick)="view.set(img.url)"
+          (contextmenu)="openCtx($event, img)">
+          <img class="gal-thumb" [src]="img.url" [alt]="img.name" loading="lazy" />
+          <div class="gal-name" [title]="img.name">{{ img.name }}</div>
+          <div class="gal-actions">
+            <button type="button" (click)="$event.stopPropagation(); copy(img)">
+              {{ copiedId() === img.id ? 'ก็อปแล้ว' : 'ก็อป URL' }}
+            </button>
+            <button type="button" [disabled]="downloading()"
+              (click)="$event.stopPropagation(); downloadOne(img)">โหลด</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="gal-empty">ยังไม่มีรูปในโฟลเดอร์แจก</p>
+      }
+      @if (marquee(); as m) {
+        <div class="marquee" [style.left.px]="m.x" [style.top.px]="m.y" [style.width.px]="m.w"
+          [style.height.px]="m.h"></div>
+      }
+    </div>
+  } @else {
+    <p class="gal-empty">กำลังโหลด...</p>
+  }
+</main>
+
+@if (selected().size) {
+  <div class="gal-bar">
+    <strong>เลือกแล้ว {{ selected().size }} รูป</strong>
+    <button type="button" (click)="selectAll()">เลือกทั้งหมด</button>
+    <button type="button" class="gal-dl" [disabled]="downloading()" (click)="downloadSelected()">
+      {{ downloading() ? 'กำลังเตรียมไฟล์...' : selected().size > 1 ? 'ดาวน์โหลด .zip' : 'ดาวน์โหลด' }}
+    </button>
+    <button type="button" (click)="clearSelect()">ยกเลิก</button>
+  </div>
+}
+
+@if (view(); as v) {
+  <div class="gal-view" (click)="view.set(null)">
+    <img [src]="v" alt="" />
+  </div>
+}
+
+@if (ctx(); as c) {
+  <div class="ctx" [style.left.px]="c.x" [style.top.px]="c.y" (click)="$event.stopPropagation()"
+    (contextmenu)="$event.preventDefault()">
+    <button type="button" (click)="ctxView()">ดูรูป</button>
+    <button type="button" (click)="ctxCopy()">คัดลอก URL</button>
+    <button type="button" (click)="ctxDownload()">
+      ดาวน์โหลด{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รูป (.zip)' : '' }}
+    </button>
+  </div>
+}

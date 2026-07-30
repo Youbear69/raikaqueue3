@@ -24,7 +24,10 @@ export class SiteNavComponent {
     const list = this.svc.settings().navFeatureItems;
     return list?.length
       ? list
-      : [{ th: this.ui.t().queueFeature, en: this.ui.t().queueFeature, url: '/register' }];
+      : [
+          { th: this.ui.t().queueFeature, en: this.ui.t().queueFeature, url: '/register' },
+          { th: 'รูปแจก', en: 'Free Images', url: '/gallery' },
+        ];
   });
 
   itemLabel(b: HeroButton): string {

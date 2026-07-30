@@ -246,13 +246,18 @@ export class RegisterSettingsComponent implements AfterViewInit {
     await this.loadGallery();
   }
 
+  private galSeq = 0;
+
   private async loadGallery(): Promise<void> {
+    const seq = ++this.galSeq;
     this.pickerError.set('');
     // cached listing shows instantly; fresh data replaces it in the background
     this.gallery.set(this.svc.cachedDriveListing(this.pickFolder()?.id));
     try {
-      this.gallery.set(await this.svc.listDriveImages(this.pickFolder()?.id));
+      const data = await this.svc.listDriveImages(this.pickFolder()?.id);
+      if (seq === this.galSeq) this.gallery.set(data);
     } catch {
+      if (seq !== this.galSeq) return;
       if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
       this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
     }
