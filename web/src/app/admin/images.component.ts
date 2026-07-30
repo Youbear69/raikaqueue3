@@ -187,7 +187,7 @@ import { downloadImages } from '../shared/download-images';
       position: fixed;
       z-index: 60;
       background: var(--bg-color);
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       padding: 4px;
       display: flex;
@@ -232,6 +232,9 @@ import { downloadImages } from '../shared/download-images';
       font-size: 11.5px;
       opacity: 0.75;
       font-weight: 600;
+    }
+    :host-context(body[data-theme='light']) .ctx {
+      border-color: rgba(0, 0, 0, 0.12);
     }
     .ex-log {
       border-top: 1px solid rgba(128, 128, 128, 0.3);

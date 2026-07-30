@@ -9,8 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { UiService } from '../../services/ui.service';
-import { QueueService } from '../../services/queue.service';
-import { normalizeImageUrl } from '../drive-url';
+import { LanyardSticker, QueueService } from '../../services/queue.service';
+import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../drive-url';
 
 // 3D lanyard badge (Three.js + Rapier rope physics), draggable.
 // Heavy deps are dynamic-imported so they land in a lazy chunk.
@@ -41,11 +41,45 @@ import { normalizeImageUrl } from '../drive-url';
           <div
             class="cv-card"
             [style.transform]="'rotateX(' + cvTilt() + 'deg) rotateY(' + cvAngle() + 'deg)'"
+            (dragover)="dragStickerUrl && $event.preventDefault()"
+            (drop)="dropOnViewer($event)"
           >
             <img class="cv-face" [src]="v.front" alt="" draggable="false" />
             <img class="cv-face cv-back" [src]="v.back" alt="" draggable="false" />
           </div>
         </div>
+        @if (svc.isAdmin()) {
+          <div class="cv-palette" (click)="$event.stopPropagation()">
+            <div class="stk-head">
+              ลากรูปไปแปะบนการ์ด ({{ (svc.settings().lanyardStickers ?? []).length }}/6)
+            </div>
+            @if (stkMsg()) {
+              <div class="stk-msg">{{ stkMsg() }}</div>
+            }
+            @if (palette(); as p) {
+              <div class="stk-folders">
+                @if (pFolder(); as f) {
+                  <button type="button" (click)="goPalette(null)">&lsaquo; กลับ</button>
+                  <strong>{{ f.name }}</strong>
+                } @else {
+                  @for (f of p.folders; track f.id) {
+                    <button type="button" (click)="goPalette(f)">{{ f.name }}</button>
+                  }
+                }
+              </div>
+              <div class="stk-grid">
+                @for (img of p.images; track img.id) {
+                  <img [src]="img.url" [alt]="img.name" [title]="img.name" draggable="true"
+                    crossorigin="anonymous" (dragstart)="onPaletteDrag(img.url)" />
+                } @empty {
+                  <div class="stk-empty">ไม่มีรูป</div>
+                }
+              </div>
+            } @else {
+              <div class="stk-empty">กำลังโหลด...</div>
+            }
+          </div>
+        }
       </div>
     }
   `,
@@ -61,6 +95,65 @@ import { normalizeImageUrl } from '../drive-url';
       width: 100%;
       height: 100%;
       display: block;
+    }
+    .cv-palette {
+      position: absolute;
+      right: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 232px;
+      max-height: 76vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: rgba(5, 12, 4, 0.55);
+      backdrop-filter: blur(10px);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: #fff;
+      cursor: default;
+    }
+    .stk-msg {
+      font-size: 12px;
+      color: #ff8a80;
+    }
+    .stk-head {
+      font-size: 12.5px;
+      opacity: 0.85;
+    }
+    .stk-folders {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .stk-folders button {
+      padding: 4px 10px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .stk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 6px;
+    }
+    .stk-grid img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: contain;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.06);
+      cursor: grab;
+    }
+    .stk-empty {
+      font-size: 12px;
+      opacity: 0.7;
     }
     .drop-zone {
       position: absolute;
@@ -143,11 +236,12 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   @ViewChild('cv') cv!: ElementRef<HTMLCanvasElement>;
 
   readonly ui = inject(UiService);
-  private readonly svc = inject(QueueService);
+  readonly svc = inject(QueueService);
   private paused = false;
   private destroyed = false;
   private cleanup: (() => void) | null = null;
   private applyImages: ((f: string, b: string) => void | Promise<void>) | null = null;
+  private applyStickers: ((defs: LanyardSticker[]) => void) | null = null;
   private applyTheme: ((dark: boolean) => void) | null = null;
 
   // drag the card onto the drop zone to open the full-size viewer
@@ -156,33 +250,177 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   readonly zoneHot = signal(false);
   readonly viewer = signal<{ front: string; back: string } | null>(null);
   private getCardImages: (() => { front: string; back: string } | null) | null = null;
+  // viewer-side sticker editing (admin): hit test + re-bake with a moved sticker
+  private stickerHit: ((px: number, py: number) => number | null) | null = null;
+  private viewerImagesWith:
+    | ((ov: Map<number, { x: number; y: number }>) => { front: string; back: string } | null)
+    | null = null;
+
+  // ---- sticker palette (admin, inside the card viewer): drag an image onto the card ----
+  readonly palette = signal<DriveListing | null>(null);
+  readonly pFolder = signal<DriveFolder | null>(null);
+  readonly stkMsg = signal('');
+  dragStickerUrl: string | null = null;
+
+  // Local draft of the sticker list: consecutive edits (move A then move B) must
+  // not base themselves on a settings snapshot that predates the previous write.
+  private stickersDraft: LanyardSticker[] | null = null;
+
+  private curStickers(): LanyardSticker[] {
+    const fromSettings = this.svc.settings().lanyardStickers ?? [];
+    if (this.stickersDraft) {
+      // settings caught up with our last write -> drop the draft
+      if (JSON.stringify(fromSettings) === JSON.stringify(this.stickersDraft)) {
+        this.stickersDraft = null;
+      } else {
+        return this.stickersDraft;
+      }
+    }
+    return fromSettings;
+  }
+
+  private writeStickers(list: LanyardSticker[]): void {
+    // mirror the service's normalization so the ack-compare above matches
+    this.stickersDraft = list
+      .slice(0, 6)
+      .map((s) => ({ ...s, img: normalizeImageUrl(s.img.trim()) }));
+    this.svc.setLanyardStickers(list);
+  }
+
+  onPaletteDrag(url: string): void {
+    this.dragStickerUrl = url;
+    // snap the card flat so the drop point maps 1:1 onto the face
+    this.cvAngle.set(0);
+    this.cvTilt.set(0);
+  }
+
+  dropOnViewer(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = this.dragStickerUrl;
+    this.dragStickerUrl = null;
+    if (!url) return;
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.round(((e.clientX - r.left) / r.width) * 100);
+    const y = Math.round(((e.clientY - r.top) / r.height) * 100);
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+    const list = [...this.curStickers()];
+    if (list.length >= 6) {
+      this.stkMsg.set('เต็ม 6 ใบแล้ว — ลบบางใบในตั้งค่าเว็บก่อน');
+      return;
+    }
+    this.stkMsg.set('');
+    list.push({
+      img: url,
+      x: Math.max(2, Math.min(98, x)),
+      y: Math.max(2, Math.min(98, y)),
+      size: 25,
+      rot: 0,
+      sheen: '',
+    });
+    this.writeStickers(list);
+  }
+
+  async loadPalette(): Promise<void> {
+    this.palette.set(this.svc.cachedDriveListing(this.pFolder()?.id));
+    try {
+      this.palette.set(await this.svc.listDriveImages(this.pFolder()?.id));
+    } catch {
+      if (!this.palette()) this.palette.set({ folders: [], images: [] });
+    }
+  }
+
+  goPalette(f: DriveFolder | null): void {
+    this.pFolder.set(f);
+    this.loadPalette();
+  }
 
   openViewer(): void {
     const imgs = this.getCardImages?.();
     if (imgs) {
       this.cvAngle.set(0);
       this.cvTilt.set(0);
+      this.stkMsg.set('');
       this.viewer.set(imgs);
+      if (this.svc.isAdmin()) this.loadPalette();
     }
   }
 
   // 360-degree spin inside the viewer: drag any direction (X = spin, Y = tilt),
-  // scroll = spin
+  // scroll = spin. Admin: grabbing a sticker (while the card faces front) moves it.
   readonly cvAngle = signal(0);
   readonly cvTilt = signal(0);
   private cvLast: { x: number; y: number } | null = null;
+  private cvStickerIdx: number | null = null;
+  private cvStickerPos: { x: number; y: number } | null = null;
+  private cvBakeAt = 0;
+
+  private cvCardRect(e: PointerEvent): DOMRect | null {
+    const el = (e.currentTarget as HTMLElement).querySelector('.cv-card');
+    return el ? el.getBoundingClientRect() : null;
+  }
+
+  private cvFlat(): boolean {
+    const near = (v: number) => {
+      const m = Math.abs(v % 360);
+      return m < 25 || m > 335;
+    };
+    return near(this.cvAngle()) && near(this.cvTilt());
+  }
 
   cvDown(e: PointerEvent): void {
+    if (this.svc.isAdmin() && this.cvFlat()) {
+      const r = this.cvCardRect(e);
+      if (r) {
+        const px = ((e.clientX - r.left) / r.width) * 100;
+        const py = ((e.clientY - r.top) / r.height) * 100;
+        const idx = this.stickerHit?.(px, py) ?? null;
+        if (idx !== null) {
+          this.cvStickerIdx = idx;
+          this.cvStickerPos = { x: px, y: py };
+          (e.target as Element).setPointerCapture(e.pointerId);
+          return;
+        }
+      }
+    }
     this.cvLast = { x: e.clientX, y: e.clientY };
     (e.target as Element).setPointerCapture(e.pointerId);
   }
   cvMove(e: PointerEvent): void {
+    if (this.cvStickerIdx !== null) {
+      const r = this.cvCardRect(e);
+      if (!r) return;
+      const x = Math.max(2, Math.min(98, ((e.clientX - r.left) / r.width) * 100));
+      const y = Math.max(2, Math.min(98, ((e.clientY - r.top) / r.height) * 100));
+      this.cvStickerPos = { x, y };
+      const now = Date.now();
+      if (now - this.cvBakeAt > 90) {
+        this.cvBakeAt = now;
+        const imgs = this.viewerImagesWith?.(new Map([[this.cvStickerIdx, { x, y }]]));
+        if (imgs) this.viewer.set(imgs);
+      }
+      return;
+    }
     if (!this.cvLast) return;
     this.cvAngle.update((a) => a + (e.clientX - this.cvLast!.x) * 0.5);
     this.cvTilt.update((t) => t - (e.clientY - this.cvLast!.y) * 0.5);
     this.cvLast = { x: e.clientX, y: e.clientY };
   }
   cvUp(e: PointerEvent): void {
+    if (this.cvStickerIdx !== null) {
+      const idx = this.cvStickerIdx;
+      const p = this.cvStickerPos;
+      this.cvStickerIdx = null;
+      this.cvStickerPos = null;
+      (e.target as Element).releasePointerCapture?.(e.pointerId);
+      if (p) {
+        const list = this.curStickers().map((s, i) =>
+          i === idx ? { ...s, x: Math.round(p.x), y: Math.round(p.y) } : s,
+        );
+        this.writeStickers(list);
+      }
+      return;
+    }
     this.cvLast = null;
     (e.target as Element).releasePointerCapture?.(e.pointerId);
   }
@@ -208,6 +446,14 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     this.applyImages?.(s.lanyardFront ?? '', s.lanyardBack ?? '');
   });
 
+  // rebuild sticker meshes when admin edits them (live).
+  // NOTE: settings MUST be read before the optional call — `fn?.(args)` skips
+  // evaluating args when fn is null, which would leave this effect untracked forever.
+  private readonly stickersEff = effect(() => {
+    const defs = this.svc.settings().lanyardStickers ?? [];
+    this.applyStickers?.(defs);
+  });
+
   async ngAfterViewInit(): Promise<void> {
     if (window.innerWidth < 900) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -217,6 +463,9 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       await new Promise<void>((res) => window.addEventListener('load', () => res(), { once: true }));
       if (this.destroyed) return;
     }
+    // and for the real settings snapshot (card images + stickers read during init)
+    await this.svc.settingsReady;
+    if (this.destroyed) return;
 
     const [THREE, RAPIER] = await Promise.all([
       import('three'),
@@ -344,7 +593,11 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
         im.crossOrigin = 'anonymous'; // required, canvas must stay untainted for WebGL
         im.onload = () => res(im);
         im.onerror = () => res(null);
-        im.src = normalizeImageUrl(url); // Drive URLs need the CORS proxy for canvas use
+        let u = normalizeImageUrl(url); // Drive URLs need the CORS proxy for canvas use
+        // separate cache key: the same URL loaded earlier by a plain <img> is cached
+        // WITHOUT CORS headers and would poison this crossOrigin load
+        if (u.startsWith(DRIVE_API)) u += (u.includes('?') ? '&' : '?') + 'cors=1';
+        im.src = u;
       });
     let lastF: string | null = null;
     let lastB: string | null = null;
@@ -385,6 +638,107 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     back.rotation.y = Math.PI;
     back.position.z = -0.005;
     cardGroup.add(front, back);
+
+    // ---- stickers on the card front (live-editable) ----
+    const stickerGroup = new THREE.Group();
+    cardGroup.add(stickerGroup);
+    // foil sheen: diagonal stripes in the chosen color, masked to the sticker's
+    // own alpha, drawn additively above the sticker and pulsed with the card sway
+    const makeSheenCanvas = (im: HTMLImageElement, color: string): HTMLCanvasElement => {
+      const c = document.createElement('canvas');
+      c.width = im.width;
+      c.height = im.height;
+      const g = c.getContext('2d')!;
+      const grad = g.createLinearGradient(0, 0, c.width, c.height);
+      for (let i = 0; i <= 10; i++) grad.addColorStop(i / 10, i % 2 ? color : 'rgba(0,0,0,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, c.width, c.height);
+      g.globalCompositeOperation = 'destination-in';
+      g.drawImage(im, 0, 0, c.width, c.height);
+      return c;
+    };
+    let stickerMats: InstanceType<typeof THREE.MeshBasicMaterial>[] = [];
+    let sheenAnims: { mat: InstanceType<typeof THREE.MeshBasicMaterial>; phase: number }[] = [];
+    // loaded defs+images kept for the full-size viewer composite
+    let stickerLoaded: {
+      d: LanyardSticker;
+      im: HTMLImageElement;
+      idx: number;
+      sheen?: HTMLCanvasElement;
+    }[] = [];
+    let stickerJson = '';
+    let stickerBuild = 0;
+    const buildStickers = async (defs: LanyardSticker[]): Promise<void> => {
+      const json = JSON.stringify(defs);
+      if (json === stickerJson) return;
+      stickerJson = json;
+      const token = ++stickerBuild;
+      const loaded: {
+        d: LanyardSticker;
+        im: HTMLImageElement;
+        idx: number;
+        sheen?: HTMLCanvasElement;
+      }[] = [];
+      for (const [idx, d] of defs.slice(0, 6).entries()) {
+        const im = await loadImg(d.img);
+        if (im) loaded.push({ d, im, idx });
+      }
+      if (token !== stickerBuild || this.destroyed) return; // superseded meanwhile
+      stickerGroup.children.slice().forEach((m) => {
+        stickerGroup.remove(m);
+        (m as InstanceType<typeof THREE.Mesh>).geometry.dispose();
+      });
+      stickerMats.forEach((m) => {
+        m.map?.dispose();
+        m.dispose();
+      });
+      stickerMats = [];
+      sheenAnims = [];
+      stickerLoaded = loaded;
+      for (const entry of loaded) {
+        const { d, im, idx } = entry;
+        const tex = new THREE.Texture(im);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        const w = ((d.size || 25) / 100) * CARD_W;
+        const h = w * (im.height / im.width);
+        const px = ((d.x ?? 50) / 100 - 0.5) * CARD_W;
+        const py = (0.5 - (d.y ?? 50) / 100) * CARD_H;
+        const rz = ((d.rot ?? 0) * Math.PI) / 180;
+        const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+        mesh.position.set(px, py, 0.004);
+        mesh.rotation.z = rz;
+        mesh.userData['idx'] = idx; // index into settings.lanyardStickers
+        stickerGroup.add(mesh);
+        stickerMats.push(mat);
+        if (d.sheen) {
+          entry.sheen = makeSheenCanvas(im, d.sheen);
+          const stex = new THREE.CanvasTexture(entry.sheen);
+          stex.colorSpace = THREE.SRGBColorSpace;
+          const smat = new THREE.MeshBasicMaterial({
+            map: stex,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            opacity: 0,
+          });
+          const smesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), smat);
+          smesh.position.set(px, py, 0.0045);
+          smesh.rotation.z = rz;
+          stickerGroup.add(smesh);
+          stickerMats.push(smat);
+          sheenAnims.push({ mat: smat, phase: idx * 1.7 });
+        }
+      }
+      // viewer open? refresh its snapshots so the new sticker shows immediately
+      if (this.viewer()) {
+        const imgs = this.getCardImages?.();
+        if (imgs) this.viewer.set(imgs);
+      }
+    };
+    this.applyStickers = (defs) => void buildStickers(defs);
+    void buildStickers(this.svc.settings().lanyardStickers ?? []);
 
     // metal carabiner clip between strap end and card slot
     const clipCanvas = document.createElement('canvas');
@@ -601,17 +955,56 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       document.body.style.cursor = '';
       if (dropped) this.openViewer();
     };
-    this.getCardImages = () => {
+    const buildViewerImages = (
+      ov?: Map<number, { x: number; y: number }>,
+    ): { front: string; back: string } | null => {
       try {
         // fresh canvases without the punch hole for the full-size viewer
         const fc = document.createElement('canvas');
         const bc = document.createElement('canvas');
         drawCardFace(fc, lastFImg, false);
         drawCardFace(bc, lastBImg, false);
+        // composite the stickers onto the front face
+        const g = fc.getContext('2d')!;
+        for (const { d, im, idx, sheen } of stickerLoaded) {
+          const o = ov?.get(idx);
+          const w = ((d.size || 25) / 100) * 630;
+          const h = w * (im.height / im.width);
+          g.save();
+          g.translate(((o?.x ?? d.x ?? 50) / 100) * 630, ((o?.y ?? d.y ?? 50) / 100) * 880);
+          g.rotate((-(d.rot ?? 0) * Math.PI) / 180);
+          g.drawImage(im, -w / 2, -h / 2, w, h);
+          if (sheen) {
+            g.globalAlpha = 0.35;
+            g.drawImage(sheen, -w / 2, -h / 2, w, h);
+          }
+          g.restore();
+        }
         return { front: fc.toDataURL(), back: bc.toDataURL() };
       } catch {
         return null; // canvas tainted by a non-CORS image
       }
+    };
+    this.getCardImages = () => buildViewerImages();
+    this.viewerImagesWith = (ov) => buildViewerImages(ov);
+    // hit test in card-percent space (viewer sticker grab)
+    this.stickerHit = (px, py) => {
+      let best: number | null = null;
+      let bestD = Infinity;
+      for (const { d, im, idx } of stickerLoaded) {
+        const wPct = d.size || 25; // % of card width
+        const hPct = ((((d.size || 25) / 100) * 630 * (im.height / im.width)) / 880) * 100;
+        const dx = px - (d.x ?? 50);
+        const dy = py - (d.y ?? 50);
+        if (Math.abs(dx) < wPct / 2 + 2 && Math.abs(dy) < hPct / 2 + 2) {
+          const dist = dx * dx + dy * dy;
+          if (dist < bestD) {
+            bestD = dist;
+            best = idx;
+          }
+        }
+      }
+      return best;
     };
     window.addEventListener('pointerdown', onDown);
     window.addEventListener('pointermove', onMove);
@@ -712,6 +1105,11 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       bandGeo.attributes['position'].needsUpdate = true;
       bandGeo.attributes['uv'].needsUpdate = true;
 
+      // foil shimmer: slow pulse + reacts to the card's yaw sway
+      for (const s of sheenAnims) {
+        s.mat.opacity = 0.12 + 0.55 * Math.abs(Math.sin(now / 900 + s.phase + cq.y * 5));
+      }
+
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(tick);
@@ -727,6 +1125,13 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       world.free();
       renderer.dispose();
       bandGeo.dispose();
+      stickerGroup.children.forEach((m) =>
+        (m as InstanceType<typeof THREE.Mesh>).geometry.dispose(),
+      );
+      stickerMats.forEach((m) => {
+        m.map?.dispose();
+        m.dispose();
+      });
       [texFront, texBack, bandTex, clipTex].forEach((t) => t.dispose());
     };
   }

@@ -65,7 +65,7 @@ type NumField =
     }
     .pk-box {
       background: var(--bg-color);
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--text-white);
       border-radius: 12px;
       padding: 16px;
@@ -128,9 +128,13 @@ type NumField =
       width: min(480px, 42vw);
       z-index: 40;
       background: var(--bg-color);
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 12px;
       padding: 8px;
+    }
+    :host-context(body[data-theme='light']) .pk-box,
+    :host-context(body[data-theme='light']) .float-preview {
+      border-color: rgba(0, 0, 0, 0.12);
     }
     .fp-head {
       display: flex;

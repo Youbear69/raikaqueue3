@@ -68,7 +68,7 @@
   top: 100%;
   right: 0;
   min-width: 200px;
-  background: rgba(5, 12, 4, 0.92);
+  background: rgba(5, 12, 4, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -84,7 +84,7 @@
 
 .nav-dd-menu a {
   display: block;
-  color: var(--text-gray);
+  color: var(--text-white); /* dark theme = #ffffff (light theme var flips to dark) */
   text-decoration: none;
   font-size: 0.98rem;
   padding: 13px 14px;
@@ -315,7 +315,7 @@
 
 /* Light theme */
 :host-context(body[data-theme='light']) .nav-dd-menu {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
   border-color: rgba(0, 0, 0, 0.12);
 }
 

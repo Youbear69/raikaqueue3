@@ -151,10 +151,58 @@
       </button>
     </div>
 
+    <h3>สติ๊กเกอร์บนบัตร (สูงสุด 6)</h3>
+    <p style="opacity: 0.7; font-size: 13px">
+      ติดบนหน้าบัตร แนะนำ PNG พื้นโปร่ง — ปรับตำแหน่ง/ขนาด/หมุน เห็นสดใน preview, สะท้อนแสง = เอฟเฟกต์ฟอยล์วิ่งตามการเอียงของบัตร
+    </p>
+    @for (st of stickers(); track $index; let i = $index) {
+      <div class="m-row">
+        <label>#{{ i + 1 }} รูป</label>
+        <input class="m-input" type="url" placeholder="https://..." [value]="st.img"
+          (change)="updateSticker(i, 'img', $any($event.target).value)" />
+        <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+          (click)="openPicker('stk-' + i)">
+          เลือกรูป
+        </button>
+        <button class="m-btn" type="button" (click)="delSticker(i)">ลบ</button>
+      </div>
+      <div class="m-row">
+        <label>X {{ st.x }}%</label>
+        <input type="range" min="0" max="100" [value]="st.x" style="width: 130px"
+          (input)="onStickerSlide(i, 'x', $any($event.target).value, false)"
+          (change)="onStickerSlide(i, 'x', $any($event.target).value, true)" />
+        <label>Y {{ st.y }}%</label>
+        <input type="range" min="0" max="100" [value]="st.y" style="width: 130px"
+          (input)="onStickerSlide(i, 'y', $any($event.target).value, false)"
+          (change)="onStickerSlide(i, 'y', $any($event.target).value, true)" />
+        <label>ขนาด {{ st.size }}%</label>
+        <input type="range" min="5" max="80" [value]="st.size" style="width: 130px"
+          (input)="onStickerSlide(i, 'size', $any($event.target).value, false)"
+          (change)="onStickerSlide(i, 'size', $any($event.target).value, true)" />
+        <label>หมุน {{ st.rot }}&deg;</label>
+        <input type="range" min="-180" max="180" [value]="st.rot" style="width: 130px"
+          (input)="onStickerSlide(i, 'rot', $any($event.target).value, false)"
+          (change)="onStickerSlide(i, 'rot', $any($event.target).value, true)" />
+        <label>
+          <input type="checkbox" [checked]="!!st.sheen" (change)="toggleSheen(i, $any($event.target).checked)" />
+          สะท้อนแสง
+        </label>
+        @if (st.sheen) {
+          <input type="color" [value]="st.sheen"
+            (change)="updateSticker(i, 'sheen', $any($event.target).value)" />
+        }
+      </div>
+    }
+    <div class="m-row">
+      <button class="m-btn" type="button" [disabled]="stickers().length >= 6" (click)="addSticker()">
+        เพิ่มสติ๊กเกอร์ ({{ stickers().length }}/6)
+      </button>
+    </div>
+
     @if (picker(); as pickField) {
     <div class="pk-overlay" (click)="picker.set(null)">
       <div class="pk-box" (click)="$event.stopPropagation()">
-        <div>เลือกรูป{{ pickerLabel[pickField] }} (จาก Google Drive folder)</div>
+        <div>เลือกรูป{{ pickLabel(pickField) }} (จาก Google Drive folder)</div>
         <div>
           <label class="m-btn" [style.opacity]="uploading() ? 0.5 : 1">
             {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}

@@ -7,7 +7,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FeatureFlag, HeroButton, QueueService, Settings } from '../services/queue.service';
+import {
+  FeatureFlag,
+  HeroButton,
+  LanyardSticker,
+  QueueService,
+  Settings,
+} from '../services/queue.service';
 
 // Fields the reset button clears (home-page settings only)
 const HOME_FIELDS: readonly (keyof Settings)[] = [
@@ -32,6 +38,7 @@ const HOME_FIELDS: readonly (keyof Settings)[] = [
   'lanyardOff',
   'lanyardFront',
   'lanyardBack',
+  'lanyardStickers',
 ];
 import { DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-url';
 
@@ -55,7 +62,7 @@ import { DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-u
     }
     .pk-box {
       background: var(--bg-color);
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--text-white);
       border-radius: 12px;
       padding: 16px;
@@ -118,9 +125,13 @@ import { DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-u
       width: min(480px, 42vw);
       z-index: 40;
       background: var(--bg-color);
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 12px;
       padding: 8px;
+    }
+    :host-context(body[data-theme='light']) .pk-box,
+    :host-context(body[data-theme='light']) .float-preview {
+      border-color: rgba(0, 0, 0, 0.12);
     }
     .fp-head {
       display: flex;
@@ -284,19 +295,21 @@ export class SiteSettingsComponent implements AfterViewInit {
   // Buttons stay disabled until the drive-api server answers (it may be offline;
   // the /i/ image proxy is a separate Cloudflare Worker and keeps working)
   readonly apiUp = signal(false);
-  readonly picker = signal<'lanyardFront' | 'lanyardBack' | 'charImg' | null>(null);
+  // 'lanyardFront' | 'lanyardBack' | 'charImg' | 'stk-<index>'
+  readonly picker = signal<string | null>(null);
   readonly gallery = signal<DriveListing | null>(null); // null = loading
   readonly pickFolder = signal<DriveFolder | null>(null);
   readonly uploading = signal(false);
   readonly pickerError = signal('');
 
-  readonly pickerLabel: Record<string, string> = {
-    lanyardFront: 'หน้าบัตร',
-    lanyardBack: 'หลังบัตร',
-    charImg: 'ตัวละคร',
-  };
+  pickLabel(field: string): string {
+    if (field === 'lanyardFront') return 'หน้าบัตร';
+    if (field === 'lanyardBack') return 'หลังบัตร';
+    if (field === 'charImg') return 'ตัวละคร';
+    return `สติ๊กเกอร์ #${+field.split('-')[1] + 1}`;
+  }
 
-  async openPicker(field: 'lanyardFront' | 'lanyardBack' | 'charImg'): Promise<void> {
+  async openPicker(field: string): Promise<void> {
     this.picker.set(field);
     this.pickFolder.set(null);
     await this.loadGallery();
@@ -327,8 +340,44 @@ export class SiteSettingsComponent implements AfterViewInit {
   pickImage(url: string): void {
     const f = this.picker();
     if (f === 'charImg') this.svc.setCharImg(url);
+    else if (f?.startsWith('stk-')) this.updateSticker(+f.split('-')[1], 'img', url);
     else if (f) this.svc.setLanyard({ [f]: url });
     this.picker.set(null);
+  }
+
+  // ---- card stickers (max 6) ----
+  stickers(): LanyardSticker[] {
+    return this.svc.settings().lanyardStickers ?? [];
+  }
+
+  addSticker(): void {
+    if (this.stickers().length >= 6) return;
+    this.svc.setLanyardStickers([
+      ...this.stickers(),
+      { img: '', x: 50, y: 50, size: 25, rot: 0, sheen: '' },
+    ]);
+  }
+
+  delSticker(i: number): void {
+    this.svc.setLanyardStickers(this.stickers().filter((_, idx) => idx !== i));
+  }
+
+  updateSticker(i: number, key: keyof LanyardSticker, value: string | number): void {
+    this.svc.setLanyardStickers(
+      this.stickers().map((s, idx) => (idx === i ? { ...s, [key]: value } : s)),
+    );
+  }
+
+  // sliders: throttled while dragging, final value on release
+  onStickerSlide(i: number, key: 'x' | 'y' | 'size' | 'rot', value: string, force: boolean): void {
+    const now = Date.now();
+    if (!force && now - this.padLastWrite < 120) return;
+    this.padLastWrite = now;
+    this.updateSticker(i, key, parseInt(value, 10) || 0);
+  }
+
+  toggleSheen(i: number, on: boolean): void {
+    this.updateSticker(i, 'sheen', on ? '#66ffcc' : '');
   }
 
   async onUpload(e: Event): Promise<void> {

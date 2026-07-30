@@ -48,7 +48,7 @@
   position: fixed;
   z-index: 60;
   background: var(--bg-color);
-  border: 1px solid rgba(128, 128, 128, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 4px;
   display: flex;
@@ -70,6 +70,10 @@
 
 .ctx button:hover {
   background: var(--input-bg);
+}
+
+:host-context(body[data-theme='light']) .ctx {
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 .gal-tile {

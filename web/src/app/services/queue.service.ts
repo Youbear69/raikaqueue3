@@ -56,6 +56,7 @@ export interface Settings {
   lanyardOff?: boolean; // hide the 3D lanyard badge on home
   lanyardFront?: string; // card front image URL (ID-1 ratio, cover-fit)
   lanyardBack?: string; // card back image URL
+  lanyardStickers?: LanyardSticker[]; // stickers on the card front (max 6)
   charOff?: boolean; // hide the hero character (parallax stack) on home
   charImg?: string; // hero character image URL override (default assets/raika_2.png)
   charImgOff?: boolean; // ignore charImg and use the default asset (URL kept for later)
@@ -107,6 +108,15 @@ export interface HeroButton {
   th: string; // label (Thai)
   en: string; // label (English)
   url: string; // "/path" = internal route, otherwise external link
+}
+
+export interface LanyardSticker {
+  img: string; // image URL
+  x: number; // % across the card, 0 = left edge
+  y: number; // % down the card, 0 = top edge
+  size: number; // % of card width
+  rot: number; // degrees
+  sheen: string; // foil-shine tint hex, '' = off
 }
 
 // Feature on/off flags editable from the admin site-settings page
@@ -161,6 +171,9 @@ export class QueueService {
 
   readonly queue = signal<QueueItem[]>([]);
   readonly settings = signal<Settings>(DEFAULT_SETTINGS);
+  // resolves once the first real settings snapshot has arrived from RTDB
+  private settingsReadyResolve!: () => void;
+  readonly settingsReady = new Promise<void>((r) => (this.settingsReadyResolve = r));
   readonly games = signal<Game[]>([]);
   readonly history = signal<HistoryItem[]>([]);
   readonly adminEmails = signal<string[]>([]);
@@ -205,9 +218,10 @@ export class QueueService {
       });
       this.queue.set(items);
     });
-    onValue(ref(this.db, 'settings'), (snap) =>
-      this.settings.set({ ...DEFAULT_SETTINGS, ...snap.val() }),
-    );
+    onValue(ref(this.db, 'settings'), (snap) => {
+      this.settings.set({ ...DEFAULT_SETTINGS, ...snap.val() });
+      this.settingsReadyResolve();
+    });
     onValue(ref(this.db, 'games'), (snap) => {
       const items: Game[] = [];
       snap.forEach((c) => {
@@ -563,6 +577,11 @@ export class QueueService {
     // hero renders big — ask the image proxy for a larger size than its 1000px default
     if (u.startsWith(DRIVE_API)) u += '?s=2500';
     update(ref(this.db, 'settings'), { charImg: u || null });
+  }
+
+  setLanyardStickers(list: LanyardSticker[]): void {
+    const st = list.slice(0, 6).map((s) => ({ ...s, img: normalizeImageUrl(s.img.trim()) }));
+    update(ref(this.db, 'settings'), { lanyardStickers: st.length ? st : null });
   }
 
   setLanyard(patch: Partial<Pick<Settings, 'lanyardOff' | 'lanyardFront' | 'lanyardBack'>>): void {
