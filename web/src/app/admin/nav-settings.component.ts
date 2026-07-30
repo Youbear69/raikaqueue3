@@ -37,6 +37,12 @@ const NAV_FIELDS: readonly (keyof Settings)[] = [
   templateUrl: './nav-settings.component.html',
   // Reuses the master page styles (cards, rows, inputs)
   styleUrl: '../master/master.component.css',
+  styles: `
+    .master-container {
+      max-width: none;
+      margin: 0;
+    }
+  `,
 })
 export class NavSettingsComponent {
   readonly svc = inject(QueueService);

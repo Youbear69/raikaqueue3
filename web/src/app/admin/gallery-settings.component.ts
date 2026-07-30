@@ -6,6 +6,12 @@ import { QueueService } from '../services/queue.service';
   templateUrl: './gallery-settings.component.html',
   // Reuses the master page styles (cards, rows, inputs)
   styleUrl: '../master/master.component.css',
+  styles: `
+    .master-container {
+      max-width: none;
+      margin: 0;
+    }
+  `,
 })
 export class GallerySettingsComponent {
   readonly svc = inject(QueueService);

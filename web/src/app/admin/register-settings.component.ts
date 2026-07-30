@@ -54,12 +54,6 @@ type NumField =
     .master-container {
       max-width: none;
       margin: 0;
-      padding-right: 540px; /* keep clear of the floating preview */
-    }
-    @media (max-width: 1500px) {
-      .master-container {
-        padding-right: 20px;
-      }
     }
     .pk-overlay {
       position: fixed;
