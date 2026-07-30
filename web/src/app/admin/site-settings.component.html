@@ -52,6 +52,15 @@
         [value]="svc.settings().lanyardFront || ''"
         (change)="svc.setLanyard({ lanyardFront: lanFront.value.trim() })"
       />
+      <button
+        class="m-btn"
+        type="button"
+        [disabled]="!apiUp()"
+        [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('lanyardFront')"
+      >
+        เลือก/อัพโหลดรูป
+      </button>
     </div>
     <div class="m-row">
       <label>รูปหลังบัตร (URL)</label>
@@ -63,7 +72,47 @@
         [value]="svc.settings().lanyardBack || ''"
         (change)="svc.setLanyard({ lanyardBack: lanBack.value.trim() })"
       />
+      <button
+        class="m-btn"
+        type="button"
+        [disabled]="!apiUp()"
+        [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('lanyardBack')"
+      >
+        เลือก/อัพโหลดรูป
+      </button>
     </div>
+
+    @if (picker(); as pickField) {
+      <div class="pk-overlay" (click)="picker.set(null)">
+        <div class="pk-box" (click)="$event.stopPropagation()">
+          <div>
+            เลือกรูป{{ pickField === 'lanyardFront' ? 'หน้าบัตร' : 'หลังบัตร' }}
+            (จาก Google Drive folder)
+          </div>
+          <div>
+            <label class="m-btn" [style.opacity]="uploading() ? 0.5 : 1">
+              {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
+              <input type="file" accept="image/*" hidden [disabled]="uploading()" (change)="onUpload($event)" />
+            </label>
+          </div>
+          @if (pickerError()) {
+            <div class="pk-err">{{ pickerError() }}</div>
+          }
+          @if (gallery(); as imgs) {
+            <div class="pk-grid">
+              @for (img of imgs; track img.id) {
+                <img [src]="img.url" [alt]="img.name" [title]="img.name" (click)="pickImage(img.url)" />
+              } @empty {
+                <div>ยังไม่มีรูปใน folder</div>
+              }
+            </div>
+          } @else {
+            <div>กำลังโหลด...</div>
+          }
+        </div>
+      </div>
+    }
 
     <div class="hp-label">ตัวอย่างหน้า home (หน้าจริง อัปเดตสด)</div>
     <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">

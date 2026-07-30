@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { UiService } from '../../services/ui.service';
 import { QueueService } from '../../services/queue.service';
+import { normalizeImageUrl } from '../drive-url';
 
 // 3D lanyard badge (Three.js + Rapier rope physics), draggable.
 // Heavy deps are dynamic-imported so they land in a lazy chunk.
@@ -337,7 +338,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
         im.crossOrigin = 'anonymous'; // required, canvas must stay untainted for WebGL
         im.onload = () => res(im);
         im.onerror = () => res(null);
-        im.src = url;
+        im.src = normalizeImageUrl(url); // Drive URLs need the CORS proxy for canvas use
       });
     let lastF: string | null = null;
     let lastB: string | null = null;

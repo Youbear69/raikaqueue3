@@ -11,6 +11,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { firebaseConfig } from '../firebase-config';
+import { DRIVE_API, DriveImage, normalizeImageUrl } from '../shared/drive-url';
 
 export type QueueStatus = 'waiting' | 'playing' | 'played';
 export interface QueueItem {
@@ -320,7 +321,32 @@ export class QueueService {
     update(ref(this.db, 'settings'), { showHands: v });
   }
 
+  async listDriveImages(): Promise<DriveImage[]> {
+    const r = await fetch(`${DRIVE_API}/list`);
+    if (!r.ok) throw new Error('list failed');
+    return r.json();
+  }
+
+  async uploadDriveImage(file: File): Promise<DriveImage> {
+    const u = this.user();
+    if (!u) throw new Error('not signed in');
+    const token = await u.getIdToken();
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch(`${DRIVE_API}/upload`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.error || 'upload failed');
+    return body;
+  }
+
   setLanyard(patch: Partial<Pick<Settings, 'lanyardOff' | 'lanyardFront' | 'lanyardBack'>>): void {
+    // Google Drive share links get rewritten to their direct-image endpoint
+    if (patch.lanyardFront) patch.lanyardFront = normalizeImageUrl(patch.lanyardFront);
+    if (patch.lanyardBack) patch.lanyardBack = normalizeImageUrl(patch.lanyardBack);
     update(ref(this.db, 'settings'), patch);
   }
 

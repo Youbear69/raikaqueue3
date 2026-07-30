@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
 import { SiteNavComponent } from '../shared/site-nav/site-nav.component';
 import { QueueService } from '../services/queue.service';
+import { normalizeImageUrl } from '../shared/drive-url';
 
 @Component({
   selector: 'register-page',
@@ -75,6 +76,7 @@ export class RegisterComponent implements OnInit {
   }
 
   onUrlInput(url: string): void {
+    url = normalizeImageUrl(url.trim());
     this.customUrl.set(url);
     if (!url.trim()) {
       this.urlState.set('idle');
