@@ -39,6 +39,8 @@ const HOME_FIELDS: readonly (keyof Settings)[] = [
   'lanyardFront',
   'lanyardBack',
   'lanyardStickers',
+  'scratchOff',
+  'scratchAllowOnly',
 ];
 import { DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-url';
 
@@ -288,7 +290,9 @@ export class SiteSettingsComponent implements AfterViewInit {
   // checkbox = "แสดง"; most flags are stored inverted (xxxOff), showHands is direct
   onFlag(field: FeatureFlag, e: Event): void {
     const checked = (e.target as HTMLInputElement).checked;
-    this.svc.setFlag({ [field]: field === 'showHands' ? checked : !checked } as never);
+    // most flags are ...Off (checkbox shows the positive), these two ARE the positive
+    const positive = field === 'showHands' || field === 'scratchAllowOnly';
+    this.svc.setFlag({ [field]: positive ? checked : !checked } as never);
   }
 
   // ---- Drive image picker (lanyard card front/back) ----
@@ -362,7 +366,7 @@ export class SiteSettingsComponent implements AfterViewInit {
     this.svc.setLanyardStickers(this.stickers().filter((_, idx) => idx !== i));
   }
 
-  updateSticker(i: number, key: keyof LanyardSticker, value: string | number): void {
+  updateSticker(i: number, key: keyof LanyardSticker, value: string | number | boolean): void {
     this.svc.setLanyardStickers(
       this.stickers().map((s, idx) => (idx === i ? { ...s, [key]: value } : s)),
     );
@@ -378,6 +382,10 @@ export class SiteSettingsComponent implements AfterViewInit {
 
   toggleSheen(i: number, on: boolean): void {
     this.updateSticker(i, 'sheen', on ? '#66ffcc' : '');
+  }
+
+  toggleScratch(i: number, on: boolean): void {
+    this.updateSticker(i, 'scratch', on);
   }
 
   async onUpload(e: Event): Promise<void> {

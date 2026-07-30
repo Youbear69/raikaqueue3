@@ -155,6 +155,16 @@
     <p style="opacity: 0.7; font-size: 13px">
       ติดบนหน้าบัตร แนะนำ PNG พื้นโปร่ง — ปรับตำแหน่ง/ขนาด/หมุน เห็นสดใน preview, สะท้อนแสง = เอฟเฟกต์ฟอยล์วิ่งตามการเอียงของบัตร
     </p>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().scratchOff" (change)="onFlag('scratchOff', $event)" />
+        เปิดเหรียญขูดสติ๊กเกอร์ (ใน viewer)
+      </label>
+      <label>
+        <input type="checkbox" [checked]="!!svc.settings().scratchAllowOnly" (change)="onFlag('scratchAllowOnly', $event)" />
+        ขูดได้แค่ใบที่ติก "อนุญาตขูด" เท่านั้น
+      </label>
+    </div>
     @for (st of stickers(); track $index; let i = $index) {
       <div class="m-row">
         <label>#{{ i + 1 }} รูป</label>
@@ -194,6 +204,10 @@
           <input type="color" [value]="st.sheen"
             (change)="updateSticker(i, 'sheen', $any($event.target).value)" />
         }
+        <label>
+          <input type="checkbox" [checked]="!!st.scratch" (change)="toggleScratch(i, $any($event.target).checked)" />
+          อนุญาตขูด
+        </label>
       </div>
     }
     <div class="m-row">

@@ -57,6 +57,8 @@ export interface Settings {
   lanyardFront?: string; // card front image URL (ID-1 ratio, cover-fit)
   lanyardBack?: string; // card back image URL
   lanyardStickers?: LanyardSticker[]; // stickers on the card front (max 6)
+  scratchOff?: boolean; // hide the scratch coin in the card viewer
+  scratchAllowOnly?: boolean; // coin only erases stickers flagged scratch: true
   charOff?: boolean; // hide the hero character (parallax stack) on home
   charImg?: string; // hero character image URL override (default assets/raika_2.png)
   charImgOff?: boolean; // ignore charImg and use the default asset (URL kept for later)
@@ -118,6 +120,7 @@ export interface LanyardSticker {
   rot: number; // degrees
   sheen: string; // foil-shine tint hex, '' = off
   side?: 'front' | 'back'; // which card face (default front)
+  scratch?: boolean; // coin may erase this sticker (checked when scratchAllowOnly)
 }
 
 // Feature on/off flags editable from the admin site-settings page
@@ -138,7 +141,9 @@ export type FeatureFlag =
   | 'navTwitchOff'
   | 'navDonateOff'
   | 'navDiscordOff'
-  | 'showHands';
+  | 'showHands'
+  | 'scratchOff'
+  | 'scratchAllowOnly';
 
 const DEFAULT_SETTINGS: Settings = {
   activeGame: 'Cardfight Vanguard DD2',

@@ -73,6 +73,7 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
             }
           </div>
         </div>
+        @if (!svc.settings().scratchOff) {
         <div class="cv-coin" [class.drag]="coinPos()" [style.left.px]="coinPos()?.x"
           [style.top.px]="coinPos()?.y" title="เหรียญขูด — ถูบนสติ๊กเกอร์เพื่อขูดออก ดูรูปข้างใต้"
           (click)="$event.stopPropagation()" (pointerdown)="coinDown($event)"
@@ -89,6 +90,7 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
               fill="#8a6508"></text>
           </svg>
         </div>
+        }
         @if (svc.isAdmin()) {
           <div class="cv-palette" (click)="$event.stopPropagation()">
             <div class="stk-head">
@@ -1537,9 +1539,11 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       const len = Math.hypot(dx, dy) || 1;
       const nx = -dy / len;
       const ny = dx / len;
+      const allowOnly = this.svc.settings().scratchAllowOnly;
       let touched = false;
       for (const en of stickerLoaded) {
         if ((en.d.side ?? 'front') !== side || !en.cnv) continue;
+        if (allowOnly && !en.d.scratch) continue; // sticker not flagged scratchable
         const cnv = en.cnv;
         const cw = ((en.d.size || 25) / 100) * 630; // sticker width in bake px
         const scale = cnv.width / cw;
