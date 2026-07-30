@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FeatureFlag, QueueService, Settings } from '../services/queue.service';
-import { DRIVE_API, DriveFolder, DriveListing } from '../shared/drive-url';
+import { DRIVE_API, DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-url';
 
 // Fields the reset button clears (register-page settings only)
 const REG_FIELDS: readonly (keyof Settings)[] = [
@@ -253,7 +253,7 @@ export class RegisterSettingsComponent implements AfterViewInit {
     } catch {
       if (seq !== this.galSeq) return;
       if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
-      this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
+      this.pickerError.set(DRIVE_API_DOWN_MSG);
     }
   }
 

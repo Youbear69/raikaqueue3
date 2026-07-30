@@ -19,7 +19,7 @@
         }
       </select>
       @if (!apiUp()) {
-        <span style="color: #c0392b">เชื่อมต่อเซิร์ฟเวอร์รูปไม่ได้</span>
+        <span style="color: #c0392b">{{ downMsg }}</span>
       }
       <a class="m-btn" href="/gallery" target="_blank" rel="noopener">เปิดหน้า /gallery</a>
     </div>

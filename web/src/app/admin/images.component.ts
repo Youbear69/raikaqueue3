@@ -1,6 +1,6 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { QueueService } from '../services/queue.service';
-import { DriveFolder, DriveImage, DriveListing } from '../shared/drive-url';
+import { DRIVE_API_DOWN_MSG, DriveFolder, DriveImage, DriveListing } from '../shared/drive-url';
 import { GifThumbComponent } from '../shared/gif-thumb.component';
 import { downloadImages } from '../shared/download-images';
 
@@ -571,7 +571,7 @@ export class ImagesComponent {
       if (seq !== this.reqSeq) return;
       if (!this.listing()) this.listing.set({ folders: [], images: [] });
       this.apiUp.set(false);
-      this.err.set('เชื่อมต่อเซิร์ฟเวอร์รูปไม่ได้');
+      this.err.set(DRIVE_API_DOWN_MSG);
     }
   }
 

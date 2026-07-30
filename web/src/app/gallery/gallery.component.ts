@@ -3,7 +3,7 @@ import { SiteBgComponent } from '../shared/site-bg/site-bg.component';
 import { SiteNavComponent } from '../shared/site-nav/site-nav.component';
 import { QueueService } from '../services/queue.service';
 import { UiService } from '../services/ui.service';
-import { DriveImage, DriveListing } from '../shared/drive-url';
+import { DRIVE_API_DOWN_MSG, DriveImage, DriveListing } from '../shared/drive-url';
 import { downloadImages } from '../shared/download-images';
 
 // Public giveaway gallery with File-Explorer interactions:
@@ -24,6 +24,8 @@ export class GalleryComponent {
   readonly view = signal<string | null>(null);
   readonly copiedId = signal('');
   readonly downloading = signal(false);
+  readonly apiDown = signal(false);
+  readonly downMsg = DRIVE_API_DOWN_MSG;
 
   private loadedFor = '';
 
@@ -41,7 +43,9 @@ export class GalleryComponent {
     this.listing.set(this.svc.cachedDriveListing(folder));
     try {
       this.listing.set(await this.svc.listDriveImages(folder));
+      this.apiDown.set(false);
     } catch {
+      this.apiDown.set(true);
       if (!this.listing()) this.listing.set({ folders: [], images: [] });
     }
   }

@@ -8,6 +8,9 @@
     เลือกทั้งหมด, ดับเบิลคลิก = ดูเต็มจอ, คลิกขวา = เมนู (ดาวน์โหลดมากกว่า 1 รูปได้เป็น .zip)
   </p>
 
+  @if (apiDown()) {
+    <p class="gal-empty gal-down">{{ downMsg }}</p>
+  }
   @if (!svc.settings().giveFolder) {
     <p class="gal-empty">ยังไม่มีรูปแจกในตอนนี้</p>
   } @else if (listing(); as l) {

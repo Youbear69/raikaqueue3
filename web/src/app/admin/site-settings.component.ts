@@ -33,7 +33,7 @@ const HOME_FIELDS: readonly (keyof Settings)[] = [
   'lanyardFront',
   'lanyardBack',
 ];
-import { DRIVE_API, DriveFolder, DriveListing } from '../shared/drive-url';
+import { DRIVE_API_DOWN_MSG, DriveFolder, DriveListing } from '../shared/drive-url';
 
 @Component({
   selector: 'site-settings-page',
@@ -320,7 +320,7 @@ export class SiteSettingsComponent implements AfterViewInit {
     } catch {
       if (seq !== this.galSeq) return;
       if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
-      this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
+      this.pickerError.set(DRIVE_API_DOWN_MSG);
     }
   }
 

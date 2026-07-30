@@ -22,6 +22,11 @@
   text-align: center;
 }
 
+.gal-down {
+  color: #e74c3c;
+  padding: 10px 0;
+}
+
 .gal-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

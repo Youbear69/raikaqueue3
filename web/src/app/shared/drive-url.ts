@@ -1,6 +1,10 @@
 // Self-hosted drive-api (see drive-api/README.md) — upload/list images in the shared folder
 export const DRIVE_API = 'https://img.meowpow.online';
 
+// Shown wherever the pi5 drive-api is unreachable
+export const DRIVE_API_DOWN_MSG =
+  'เครื่อง server ไม่ทำงาน หรือไฟดับ กรุณาสวดอ้อนวอนเพื่อให้เครื่อง server กลับมาใช้งานได้ปกติ';
+
 export interface DriveImage {
   id: string;
   name: string;

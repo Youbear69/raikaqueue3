@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { QueueService } from '../services/queue.service';
+import { DRIVE_API_DOWN_MSG } from '../shared/drive-url';
 
 @Component({
   selector: 'gallery-settings-page',
@@ -16,6 +17,7 @@ import { QueueService } from '../services/queue.service';
 export class GallerySettingsComponent {
   readonly svc = inject(QueueService);
   readonly apiUp = signal(false);
+  readonly downMsg = DRIVE_API_DOWN_MSG;
 
   constructor() {
     this.loadFolders();
