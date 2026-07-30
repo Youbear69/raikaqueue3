@@ -257,7 +257,11 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
 
     // plain white card, standard TCG ratio (63 x 88 mm). Custom image =
     // full-bleed cover-fit; no image = crown logo.
-    const drawCardFace = (c: HTMLCanvasElement, img: HTMLImageElement | null): void => {
+    const drawCardFace = (
+      c: HTMLCanvasElement,
+      img: HTMLImageElement | null,
+      withHole = true,
+    ): void => {
       c.width = 630;
       c.height = 880;
       const g = c.getContext('2d')!;
@@ -287,16 +291,18 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
           g.drawImage(crown, (630 - w) / 2, (880 - h) / 2 - 20, w, h);
         }
       }
-      // punch hole
-      g.save();
-      g.globalCompositeOperation = 'destination-out';
-      rr(260, 42, 110, 28, 14);
-      g.fill();
-      g.restore();
-      g.lineWidth = 4;
-      g.strokeStyle = 'rgba(0,0,0,0.18)';
-      rr(260, 42, 110, 28, 14);
-      g.stroke();
+      // punch hole (skipped in the full-size viewer)
+      if (withHole) {
+        g.save();
+        g.globalCompositeOperation = 'destination-out';
+        rr(260, 42, 110, 28, 14);
+        g.fill();
+        g.restore();
+        g.lineWidth = 4;
+        g.strokeStyle = 'rgba(0,0,0,0.18)';
+        rr(260, 42, 110, 28, 14);
+        g.stroke();
+      }
     };
 
     const bandCanvas = document.createElement('canvas');
@@ -342,15 +348,20 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       });
     let lastF: string | null = null;
     let lastB: string | null = null;
+    // kept for the full-size viewer (redrawn there without the punch hole)
+    let lastFImg: HTMLImageElement | null = null;
+    let lastBImg: HTMLImageElement | null = null;
     this.applyImages = async (f, b) => {
       if (f !== lastF) {
         lastF = f;
-        drawCardFace(frontCanvas, await loadImg(f));
+        lastFImg = await loadImg(f);
+        drawCardFace(frontCanvas, lastFImg);
         texFront.needsUpdate = true;
       }
       if (b !== lastB) {
         lastB = b;
-        drawCardFace(backCanvas, await loadImg(b));
+        lastBImg = await loadImg(b);
+        drawCardFace(backCanvas, lastBImg);
         texBack.needsUpdate = true;
       }
     };
@@ -592,7 +603,12 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     };
     this.getCardImages = () => {
       try {
-        return { front: frontCanvas.toDataURL(), back: backCanvas.toDataURL() };
+        // fresh canvases without the punch hole for the full-size viewer
+        const fc = document.createElement('canvas');
+        const bc = document.createElement('canvas');
+        drawCardFace(fc, lastFImg, false);
+        drawCardFace(bc, lastBImg, false);
+        return { front: fc.toDataURL(), back: bc.toDataURL() };
       } catch {
         return null; // canvas tainted by a non-CORS image
       }

@@ -143,10 +143,12 @@
   z-index: 1;
   left: 58%;
   bottom: -86vh;
-  /* --char-x / --char-y / --char-scale: admin-set offset + size from site settings */
+  /* --char-x / --char-y / --char-scale: admin-set offset + size from site settings.
+     Settings load after first paint, so the transition animates 0,0 -> saved spot. */
   transform: translate(calc(-50% + var(--char-x, 0px)), var(--char-y, 0px))
     scale(var(--char-scale, 1));
   transform-origin: 50% 100%;
+  transition: transform 0.9s cubic-bezier(0.22, 0.9, 0.3, 1);
   width: min(160vh, 107vw);
   height: 179vh;
   pointer-events: none;
