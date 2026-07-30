@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { UiService } from '../../services/ui.service';
 import { LanyardSticker, QueueService } from '../../services/queue.service';
@@ -46,6 +47,8 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
           >
             <img class="cv-face" [src]="v.front" alt="" draggable="false" />
             <img class="cv-face cv-back" [src]="v.back" alt="" draggable="false" />
+            <canvas #scrF class="cv-face cv-scratch" width="630" height="880"></canvas>
+            <canvas #scrB class="cv-face cv-back cv-scratch" width="630" height="880"></canvas>
             @if (cvLift(); as L) {
               <div class="cv-lift" [class.stamp]="L.stamp" [style.left.%]="L.x" [style.top.%]="L.y"
                 [style.width.%]="L.w">
@@ -54,13 +57,49 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
                   alt="" draggable="false" />
               </div>
             }
+            @if (cvTear(); as T) {
+              <div class="cv-tear tear-a" [style.left.%]="T.x" [style.top.%]="T.y"
+                [style.width.%]="T.w" [style.--tx.px]="T.tx" [style.--ty.px]="T.ty">
+                <img [src]="T.a"
+                  [style.transform]="'rotate(' + T.rot + 'deg)' + (T.back ? ' scaleX(-1)' : '')"
+                  alt="" draggable="false" />
+              </div>
+              <div class="cv-tear tear-b" [style.left.%]="T.x" [style.top.%]="T.y"
+                [style.width.%]="T.w">
+                <img [src]="T.b"
+                  [style.transform]="'rotate(' + T.rot + 'deg)' + (T.back ? ' scaleX(-1)' : '')"
+                  alt="" draggable="false" />
+              </div>
+            }
           </div>
+        </div>
+        <div class="cv-coin" [class.drag]="coinPos()" [style.left.px]="coinPos()?.x"
+          [style.top.px]="coinPos()?.y" title="เหรียญขูด — ถูบนสติ๊กเกอร์เพื่อขูดออก ดูรูปข้างใต้"
+          (click)="$event.stopPropagation()" (pointerdown)="coinDown($event)"
+          (pointermove)="coinMove($event)" (pointerup)="coinUp($event)"
+          (pointercancel)="coinUp($event)">
+          <svg viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="30" fill="#e7b93c" />
+            <circle cx="32" cy="32" r="30" fill="none" stroke="#b8860b" stroke-width="3"
+              stroke-dasharray="3 3" />
+            <circle cx="32" cy="32" r="22" fill="#f3cf5e" stroke="#c9971a" stroke-width="2" />
+            <path d="M20 40c8 6 16 6 24 0" stroke="#fff6d8" stroke-width="3" fill="none"
+              stroke-linecap="round" opacity="0.8" />
+            <text x="32" y="39" text-anchor="middle" font-size="20" font-weight="800"
+              fill="#8a6508"></text>
+          </svg>
         </div>
         @if (svc.isAdmin()) {
           <div class="cv-palette" (click)="$event.stopPropagation()">
             <div class="stk-head">
-              ลากรูปไปแปะบนการ์ด ({{ (svc.settings().lanyardStickers ?? []).length }}/6)
+              ลากรูปไปแปะบนการ์ด ({{ (svc.settings().lanyardStickers ?? []).length }}/6) —
+              จับแล้วกระชากแรงๆ = ฉีกทิ้ง, scroll ตอนจับ = ปรับขนาด
             </div>
+            <label class="stk-drag">
+              <input type="checkbox" [checked]="stkDrag()"
+                (change)="stkDrag.set($any($event.target).checked)" />
+              เปิดลากรูป/ย้ายสติ๊กเกอร์ (กันย้ายโดยไม่ตั้งใจ)
+            </label>
             @if (stkMsg()) {
               <div class="stk-msg">{{ stkMsg() }}</div>
             }
@@ -77,7 +116,8 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
               </div>
               <div class="stk-grid">
                 @for (img of p.images; track img.id) {
-                  <img [src]="img.url" [alt]="img.name" [title]="img.name" draggable="true"
+                  <img [src]="img.url" [alt]="img.name" [title]="img.name"
+                    [draggable]="stkDrag()" [class.stk-off]="!stkDrag()"
                     crossorigin="anonymous" (dragstart)="onPaletteDrag(img.url, $event)"
                     (dragend)="onPaletteDragEnd()" />
                 } @empty {
@@ -131,6 +171,18 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
     .stk-head {
       font-size: 12.5px;
       opacity: 0.85;
+    }
+    .stk-drag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stk-grid img.stk-off {
+      opacity: 0.45;
+      cursor: default;
     }
     .stk-folders {
       display: flex;
@@ -261,6 +313,70 @@ import { DRIVE_API, DriveFolder, DriveListing, normalizeImageUrl } from '../driv
         opacity: 1;
       }
     }
+    .cv-scratch {
+      pointer-events: none;
+      background: transparent;
+      box-shadow: none;
+    }
+    .cv-coin {
+      position: absolute;
+      left: 26px;
+      bottom: 26px;
+      width: 64px;
+      height: 64px;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+      transition: transform 0.15s;
+    }
+    .cv-coin:hover {
+      transform: scale(1.08);
+    }
+    .cv-coin.drag {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: auto;
+      transform: translate(-50%, -55%) rotate(-14deg) scale(1.05);
+      cursor: grabbing;
+      z-index: 70;
+      transition: none;
+    }
+    .cv-coin svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .cv-tear {
+      position: absolute;
+      pointer-events: none;
+      z-index: 4;
+      transform: translate(-50%, -50%);
+    }
+    .cv-tear img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
+    }
+    .tear-a {
+      animation: cv-tear-fly 0.55s ease-out forwards;
+    }
+    @keyframes cv-tear-fly {
+      to {
+        transform: translate(calc(-50% + var(--tx, 120px)), calc(-50% + var(--ty, -60px)))
+          rotate(-26deg);
+        opacity: 0;
+      }
+    }
+    .tear-b {
+      animation: cv-tear-fall 0.65s ease-in 0.1s forwards;
+    }
+    @keyframes cv-tear-fall {
+      to {
+        transform: translate(-50%, calc(-50% + 150px)) rotate(16deg);
+        opacity: 0;
+      }
+    }
     @media (max-width: 899px) {
       :host { display: none; }
     }
@@ -271,6 +387,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
 
   readonly ui = inject(UiService);
   readonly svc = inject(QueueService);
+  private readonly host = inject(ElementRef);
   private paused = false;
   private destroyed = false;
   private cleanup: (() => void) | null = null;
@@ -284,13 +401,17 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   readonly zoneHot = signal(false);
   readonly viewer = signal<{ front: string; back: string } | null>(null);
   private getCardImages: (() => { front: string; back: string } | null) | null = null;
-  // viewer-side sticker editing (admin): hit test, bake-without-one, sticker info
+  // viewer-side sticker editing (admin): hit test, sticker-layer renderer, sticker info
   private stickerHit: ((px: number, py: number, side: 'front' | 'back') => number | null) | null =
     null;
-  private viewerImagesSkip: ((skip: number) => { front: string; back: string } | null) | null =
-    null;
+  private layerRedraw: ((skip?: number) => void) | null = null;
   private stickerInfo:
-    | ((idx: number) => { src: string; size: number; rot: number } | null)
+    | ((idx: number) => {
+      src: string;
+      im: HTMLImageElement;
+      size: number;
+      rot: number;
+    } | null)
     | null = null;
 
   // lifted/stamping sticker overlay in the viewer (phase-2 attach/peel feel)
@@ -309,6 +430,8 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   readonly palette = signal<DriveListing | null>(null);
   readonly pFolder = signal<DriveFolder | null>(null);
   readonly stkMsg = signal('');
+  // drag/move guard: unchecked = stickers untouchable (no accidental moves)
+  readonly stkDrag = signal(false);
   dragStickerUrl: string | null = null;
 
   // Local draft of the sticker list: bridges only the moment between our write
@@ -463,6 +586,186 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
   }
 
   private cvStickerFacing: 'front' | 'back' = 'front';
+  private cvPrevSample: { x: number; y: number; t: number } | null = null;
+
+  // ---- scratch coin: rub STICKERS off like prepaid-card coating, revealing the
+  // card art underneath. Session-only; editing stickers repaints the layer. ----
+  readonly coinPos = signal<{ x: number; y: number } | null>(null); // null = docked in the corner
+  private coinDragging = false;
+  private coinPrev: { x: number; y: number; side: 'front' | 'back' } | null = null;
+  // offscreen sticker layers (stickers live here, above the plain card faces)
+  private scratchF: HTMLCanvasElement | null = null;
+  private scratchB: HTMLCanvasElement | null = null;
+  private scrF = viewChild<ElementRef<HTMLCanvasElement>>('scrF');
+  private scrB = viewChild<ElementRef<HTMLCanvasElement>>('scrB');
+
+  // re-blit the sticker layers whenever the viewer canvases (re)appear
+  private readonly scrBlitEff = effect(() => {
+    const f = this.scrF()?.nativeElement;
+    const b = this.scrB()?.nativeElement;
+    if (f && this.scratchF) f.getContext('2d')!.drawImage(this.scratchF, 0, 0);
+    if (b && this.scratchB) b.getContext('2d')!.drawImage(this.scratchB, 0, 0);
+  });
+
+  private scratchCanvasOf(side: 'front' | 'back'): HTMLCanvasElement {
+    const make = () => {
+      const c = document.createElement('canvas');
+      c.width = 630;
+      c.height = 880;
+      const g = c.getContext('2d')!;
+      g.beginPath();
+      g.roundRect(6, 6, 618, 868, 35);
+      g.clip(); // clip stays for the canvas lifetime — stickers never leave the card
+      return c;
+    };
+    if (side === 'front') return (this.scratchF ??= make());
+    return (this.scratchB ??= make());
+  }
+
+  private blitLayer(side: 'front' | 'back'): void {
+    const off = side === 'front' ? this.scratchF : this.scratchB;
+    const vis = side === 'front' ? this.scrF()?.nativeElement : this.scrB()?.nativeElement;
+    if (off && vis) {
+      const vg = vis.getContext('2d')!;
+      vg.clearRect(0, 0, 630, 880);
+      vg.drawImage(off, 0, 0);
+    }
+  }
+
+  // erase sticker pixels along the rub — assigned in init (needs sticker state);
+  // affects the per-sticker canvases, so the 3D card and viewer both show it
+  private scratchApply:
+    | ((side: 'front' | 'back', x0: number, y0: number, x1: number, y1: number) => void)
+    | null = null;
+  private scratchPersist: (() => void) | null = null; // save scratch log to localStorage
+
+  coinDown(e: PointerEvent): void {
+    e.stopPropagation();
+    this.coinDragging = true;
+    this.coinPrev = null;
+    this.coinPos.set({ x: e.clientX, y: e.clientY });
+    (e.target as Element).setPointerCapture(e.pointerId);
+  }
+
+  coinMove(e: PointerEvent): void {
+    if (!this.coinDragging) return;
+    this.coinPos.set({ x: e.clientX, y: e.clientY });
+    const facing = this.cvFacing();
+    if (!facing) {
+      this.coinPrev = null;
+      return;
+    }
+    const cardEl = this.host.nativeElement.querySelector('.cv-card') as HTMLElement | null;
+    if (!cardEl) return;
+    const r = cardEl.getBoundingClientRect();
+    const fx = (e.clientX - r.left) / r.width;
+    const fy = (e.clientY - r.top) / r.height;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) {
+      this.coinPrev = null;
+      return;
+    }
+    const cx = fx * 630;
+    const cy = fy * 880;
+    if (this.coinPrev && this.coinPrev.side === facing) {
+      this.scratchApply?.(facing, this.coinPrev.x, this.coinPrev.y, cx, cy);
+    }
+    this.coinPrev = { x: cx, y: cy, side: facing };
+  }
+
+  coinUp(e: PointerEvent): void {
+    if (!this.coinDragging) return;
+    this.coinDragging = false;
+    this.coinPrev = null;
+    this.coinPos.set(null); // glides back to its corner
+    this.scratchPersist?.(); // scratches survive a page reload
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+  }
+
+  // torn-apart pieces overlay (phase-3 tear = delete)
+  readonly cvTear = signal<{
+    x: number;
+    y: number;
+    w: number;
+    rot: number;
+    a: string;
+    b: string;
+    tx: number;
+    ty: number;
+    back?: boolean;
+  } | null>(null);
+
+  // split the sticker image into two pieces along a random jagged line,
+  // with a white torn-paper edge
+  private makeTearPieces(im: HTMLImageElement): { a: string; b: string } | null {
+    try {
+      const W = im.width;
+      const H = im.height;
+      const jag: { x: number; y: number }[] = [];
+      const steps = 9;
+      for (let i = 0; i <= steps; i++) {
+        jag.push({ x: W * (0.5 + (Math.random() - 0.5) * 0.24), y: (H * i) / steps });
+      }
+      const piece = (left: boolean): string => {
+        const c = document.createElement('canvas');
+        c.width = W;
+        c.height = H;
+        const g = c.getContext('2d')!;
+        g.beginPath();
+        g.moveTo(jag[0].x, 0);
+        for (const p of jag) g.lineTo(p.x, p.y);
+        g.lineTo(left ? 0 : W, H);
+        g.lineTo(left ? 0 : W, 0);
+        g.closePath();
+        g.save();
+        g.clip();
+        g.drawImage(im, 0, 0, W, H);
+        g.restore();
+        // white torn edge along the rip, kept inside the piece's own alpha
+        g.globalCompositeOperation = 'source-atop';
+        g.strokeStyle = 'rgba(255,255,255,0.95)';
+        g.lineWidth = Math.max(3, W * 0.025);
+        g.lineJoin = 'round';
+        g.beginPath();
+        g.moveTo(jag[0].x, 0);
+        for (const p of jag) g.lineTo(p.x, p.y);
+        g.stroke();
+        return c.toDataURL();
+      };
+      return { a: piece(true), b: piece(false) };
+    } catch {
+      return null; // tainted canvas — tear visual skipped, delete still happens
+    }
+  }
+
+  // hard yank while holding a sticker rips it off the card (and deletes it)
+  private tearSticker(idx: number, x: number, y: number, dx: number, dy: number): void {
+    const info = this.stickerInfo?.(idx);
+    const L = this.cvLift();
+    this.cvStickerIdx = null;
+    this.cvStickerPos = null;
+    this.cvStickerSize = null;
+    this.cvPrevSample = null;
+    this.cvLift.set(null);
+    if (info) {
+      const pieces = this.makeTearPieces(info.im);
+      if (pieces) {
+        const len = Math.hypot(dx, dy) || 1;
+        this.cvTear.set({
+          x: this.overlayX(x),
+          y,
+          w: L?.w ?? info.size,
+          rot: info.rot,
+          a: pieces.a,
+          b: pieces.b,
+          tx: (dx / len) * 150,
+          ty: (dy / len) * 150,
+          back: this.cvStickerFacing === 'back',
+        });
+        setTimeout(() => this.cvTear.set(null), 800);
+      }
+    }
+    this.writeStickers(this.curStickers().filter((_, i) => i !== idx));
+  }
 
   // overlay left% — the flipped card mirrors child positions, so back = 100-x
   private overlayX(faceX: number): number {
@@ -471,7 +774,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
 
   cvDown(e: PointerEvent): void {
     const facing = this.cvFacing();
-    if (this.svc.isAdmin() && facing) {
+    if (this.svc.isAdmin() && this.stkDrag() && facing) {
       const r = this.cvCardRect(e);
       if (r) {
         // screen % maps 1:1 onto the shown face's bake space (both faces)
@@ -484,10 +787,10 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
           this.cvStickerFacing = facing;
           this.cvStickerPos = { x: px, y: py };
           this.cvStickerSize = info.size;
-          // peel: re-bake the card WITHOUT this sticker once, then a floating
-          // overlay follows the pointer (lifted look, no per-move re-bakes)
-          const imgs = this.viewerImagesSkip?.(idx);
-          if (imgs) this.viewer.set(imgs);
+          this.cvPrevSample = null;
+          // peel: repaint the sticker layer WITHOUT this sticker once, then a
+          // floating overlay follows the pointer (lifted look, no per-move repaints)
+          this.layerRedraw?.(idx);
           this.cvLift.set({
             idx,
             src: info.src,
@@ -511,6 +814,21 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       if (!r) return;
       const x = Math.max(2, Math.min(98, ((e.clientX - r.left) / r.width) * 100));
       const y = Math.max(2, Math.min(98, ((e.clientY - r.top) / r.height) * 100));
+      // yank detection: fast pull (face-% per ms) rips the sticker off
+      const now = performance.now();
+      const prev = this.cvPrevSample;
+      this.cvPrevSample = { x, y, t: now };
+      if (prev) {
+        const dt = now - prev.t;
+        if (dt > 4) {
+          const dx = x - prev.x;
+          const dy = y - prev.y;
+          if (Math.hypot(dx, dy) / dt > 1.3) {
+            this.tearSticker(this.cvStickerIdx, x, y, dx, dy);
+            return;
+          }
+        }
+      }
       this.cvStickerPos = { x, y };
       const L = this.cvLift();
       if (L) this.cvLift.set({ ...L, x: this.overlayX(x), y });
@@ -555,7 +873,9 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     e.preventDefault();
     // holding a sticker: wheel resizes it (up = bigger); otherwise spin the card
     if (this.cvStickerIdx !== null && this.cvStickerSize !== null) {
-      this.cvStickerSize = Math.max(5, Math.min(80, this.cvStickerSize - e.deltaY * 0.04));
+      // no upper cap; step scales with size so big stickers still resize fast
+      const step = e.deltaY * 0.04 * Math.max(1, this.cvStickerSize / 40);
+      this.cvStickerSize = Math.max(2, this.cvStickerSize - step);
       const L = this.cvLift();
       if (L) this.cvLift.set({ ...L, w: this.cvStickerSize });
       return;
@@ -798,27 +1118,46 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
     };
     let stickerMats: InstanceType<typeof THREE.MeshBasicMaterial>[] = [];
     let sheenAnims: { mat: InstanceType<typeof THREE.MeshBasicMaterial>; phase: number }[] = [];
-    // loaded defs+images kept for the full-size viewer composite
+    // loaded defs+images kept for the full-size viewer composite; cnv is the
+    // scratchable per-sticker canvas shared by the 3D texture AND the viewer layer
     let stickerLoaded: {
       d: LanyardSticker;
       im: HTMLImageElement;
       idx: number;
+      cnv?: HTMLCanvasElement;
       sheen?: HTMLCanvasElement;
+      tex?: InstanceType<typeof THREE.CanvasTexture>;
+      stex?: InstanceType<typeof THREE.CanvasTexture>;
     }[] = [];
     let stickerJson = '';
     let stickerBuild = 0;
     let firstStickerBuild = true;
+    // scratch persistence: strokes replayed from localStorage on load; tied to
+    // the exact sticker layout (layout change = saved scratches invalid)
+    const SCRATCH_KEY = 'raika-scratch';
+    let scratchLog: {
+      s: 'front' | 'back';
+      x0: number;
+      y0: number;
+      x1: number;
+      y1: number;
+      st: { o: number; w: number; a: number }[];
+    }[] = [];
+    let scratchRestore = true;
+    let eraseSeg: (
+      side: 'front' | 'back',
+      x0: number,
+      y0: number,
+      x1: number,
+      y1: number,
+      strokes: { o: number; w: number; a: number }[],
+    ) => boolean = () => false; // assigned after init builds the sticker closures
     const buildStickers = async (defs: LanyardSticker[]): Promise<void> => {
       const json = JSON.stringify(defs);
       if (json === stickerJson) return;
       stickerJson = json;
       const token = ++stickerBuild;
-      const loaded: {
-        d: LanyardSticker;
-        im: HTMLImageElement;
-        idx: number;
-        sheen?: HTMLCanvasElement;
-      }[] = [];
+      const loaded: typeof stickerLoaded = [];
       for (const [idx, d] of defs.slice(0, 6).entries()) {
         const im = await loadImg(d.img);
         if (im) loaded.push({ d, im, idx });
@@ -840,9 +1179,15 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       stickerLoaded = loaded;
       for (const entry of loaded) {
         const { d, im, idx } = entry;
-        const tex = new THREE.Texture(im);
+        // scratchable canvas: coin erases pixels here; texture + viewer both read it
+        const cnv = document.createElement('canvas');
+        cnv.width = im.width;
+        cnv.height = im.height;
+        cnv.getContext('2d')!.drawImage(im, 0, 0);
+        entry.cnv = cnv;
+        const tex = new THREE.CanvasTexture(cnv);
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.needsUpdate = true;
+        entry.tex = tex;
         const w = ((d.size || 25) / 100) * CARD_W;
         const h = w * (im.height / im.width);
         const backSide = (d.side ?? 'front') === 'back';
@@ -876,6 +1221,7 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
           entry.sheen = makeSheenCanvas(im, d.sheen);
           const stex = new THREE.CanvasTexture(entry.sheen);
           stex.colorSpace = THREE.SRGBColorSpace;
+          entry.stex = stex;
           const smat = new THREE.MeshBasicMaterial({
             map: stex,
             transparent: true,
@@ -897,12 +1243,30 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
           sheenAnims.push({ mat: smat, phase: idx * 1.7 });
         }
       }
-      // viewer open? refresh its snapshots so the edit shows immediately,
-      // and retire the lifted/stamping overlay (its sticker is baked in now)
-      if (this.viewer()) {
-        const imgs = this.getCardImages?.();
-        if (imgs) this.viewer.set(imgs);
-        this.cvLift.set(null);
+      // repaint the viewer sticker layer (scratch marks reset — layout changed)
+      // and retire the lifted/stamping overlay (its sticker is painted in now)
+      this.layerRedraw?.();
+      if (this.viewer()) this.cvLift.set(null);
+      // first build: replay saved scratches if the layout matches;
+      // later builds: layout changed, saved scratches point at stale coords
+      if (scratchRestore) {
+        scratchRestore = false;
+        try {
+          const saved = JSON.parse(localStorage.getItem(SCRATCH_KEY) ?? 'null') as {
+            k: string;
+            v: typeof scratchLog;
+          } | null;
+          if (saved?.k === json && Array.isArray(saved.v)) {
+            scratchLog = saved.v;
+            for (const seg of scratchLog) eraseSeg(seg.s, seg.x0, seg.y0, seg.x1, seg.y1, seg.st);
+            this.layerRedraw?.();
+          }
+        } catch {
+          /* corrupt storage — start fresh */
+        }
+      } else if (scratchLog.length) {
+        scratchLog = [];
+        localStorage.removeItem(SCRATCH_KEY);
       }
     };
     this.applyStickers = (defs) => void buildStickers(defs);
@@ -1123,49 +1487,146 @@ export class LanyardComponent implements AfterViewInit, OnDestroy {
       document.body.style.cursor = '';
       if (dropped) this.openViewer();
     };
-    const buildViewerImages = (skip?: number): { front: string; back: string } | null => {
+    const buildViewerImages = (): { front: string; back: string } | null => {
       try {
-        // fresh canvases without the punch hole for the full-size viewer
+        // fresh canvases without the punch hole for the full-size viewer;
+        // stickers live on separate scratch-off layer canvases (layerRedraw)
         const fc = document.createElement('canvas');
         const bc = document.createElement('canvas');
         drawCardFace(fc, lastFImg, false);
         drawCardFace(bc, lastBImg, false);
-        // composite the stickers onto their face, clipped to the card shape
-        const gf = fc.getContext('2d')!;
-        const gb = bc.getContext('2d')!;
-        for (const g of [gf, gb]) {
-          g.save();
-          g.beginPath();
-          g.roundRect(6, 6, 618, 868, 35);
-          g.clip();
-        }
-        for (const { d, im, idx, sheen } of stickerLoaded) {
-          if (idx === skip) continue; // lifted sticker rendered as an overlay instead
-          const g = (d.side ?? 'front') === 'back' ? gb : gf;
-          const w = ((d.size || 25) / 100) * 630;
-          const h = w * (im.height / im.width);
-          g.save();
-          g.translate(((d.x ?? 50) / 100) * 630, ((d.y ?? 50) / 100) * 880);
-          g.rotate((-(d.rot ?? 0) * Math.PI) / 180);
-          g.drawImage(im, -w / 2, -h / 2, w, h);
-          if (sheen) {
-            g.globalAlpha = 0.35;
-            g.drawImage(sheen, -w / 2, -h / 2, w, h);
-          }
-          g.restore();
-        }
-        gf.restore();
-        gb.restore();
         return { front: fc.toDataURL(), back: bc.toDataURL() };
       } catch {
         return null; // canvas tainted by a non-CORS image
       }
     };
     this.getCardImages = () => buildViewerImages();
-    this.viewerImagesSkip = (skip) => buildViewerImages(skip);
+    // paint the stickers (minus a lifted one) onto the scratch-off layer canvases;
+    // the coin erases from these, revealing the card face underneath
+    this.layerRedraw = (skip?: number) => {
+      for (const side of ['front', 'back'] as const) {
+        const off = this.scratchCanvasOf(side);
+        const g = off.getContext('2d')!;
+        g.save();
+        g.clearRect(0, 0, 630, 880);
+        for (const { d, im, idx, cnv, sheen } of stickerLoaded) {
+          if (idx === skip) continue; // lifted sticker rendered as an overlay instead
+          if ((d.side ?? 'front') !== side) continue;
+          const w = ((d.size || 25) / 100) * 630;
+          const h = w * (im.height / im.width);
+          g.save();
+          g.translate(((d.x ?? 50) / 100) * 630, ((d.y ?? 50) / 100) * 880);
+          g.rotate((-(d.rot ?? 0) * Math.PI) / 180);
+          g.drawImage(cnv ?? im, -w / 2, -h / 2, w, h);
+          if (sheen) {
+            g.globalAlpha = 0.35;
+            g.drawImage(sheen, -w / 2, -h / 2, w, h);
+          }
+          g.restore();
+        }
+        g.restore();
+        this.blitLayer(side);
+      }
+    };
+    this.layerRedraw();
+    // erase one segment from every scratchable sticker canvas the stroke
+    // crosses (in sticker-local space) and refresh the 3D textures
+    eraseSeg = (side, x0, y0, x1, y1, strokes) => {
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      let touched = false;
+      for (const en of stickerLoaded) {
+        if ((en.d.side ?? 'front') !== side || !en.cnv) continue;
+        const cnv = en.cnv;
+        const cw = ((en.d.size || 25) / 100) * 630; // sticker width in bake px
+        const scale = cnv.width / cw;
+        const cx = ((en.d.x ?? 50) / 100) * 630;
+        const cy = ((en.d.y ?? 50) / 100) * 880;
+        // bake draws with rotate(-rot); inverse = rotate(+rot) on the delta
+        const a = ((en.d.rot ?? 0) * Math.PI) / 180;
+        const co = Math.cos(a);
+        const si = Math.sin(a);
+        const map = (px: number, py: number) => {
+          const ddx = px - cx;
+          const ddy = py - cy;
+          return {
+            x: cnv.width / 2 + (ddx * co - ddy * si) * scale,
+            y: cnv.height / 2 + (ddx * si + ddy * co) * scale,
+          };
+        };
+        const p0 = map(x0, y0);
+        const p1 = map(x1, y1);
+        const m = 40 * scale; // stroke never reaches this sticker? skip
+        if (
+          Math.max(p0.x, p1.x) < -m ||
+          Math.min(p0.x, p1.x) > cnv.width + m ||
+          Math.max(p0.y, p1.y) < -m ||
+          Math.min(p0.y, p1.y) > cnv.height + m
+        ) {
+          continue;
+        }
+        for (const tgt of [cnv, en.sheen ?? null]) {
+          if (!tgt) continue;
+          const g = tgt.getContext('2d')!;
+          g.save();
+          g.globalCompositeOperation = 'destination-out';
+          g.lineCap = 'round';
+          for (const st of strokes) {
+            const q0 = map(x0 + nx * st.o, y0 + ny * st.o);
+            const q1 = map(x1 + nx * st.o, y1 + ny * st.o);
+            g.globalAlpha = st.a;
+            g.lineWidth = st.w * scale;
+            g.beginPath();
+            g.moveTo(q0.x, q0.y);
+            g.lineTo(q1.x, q1.y);
+            g.stroke();
+          }
+          g.restore();
+        }
+        if (en.tex) en.tex.needsUpdate = true;
+        if (en.stex) en.stex.needsUpdate = true;
+        touched = true;
+      }
+      return touched;
+    };
+    // coin rub: one wide core rub + thin streaks = prepaid-card scratch look;
+    // hits get logged so they survive a page reload (persisted on coin drop)
+    this.scratchApply = (side, x0, y0, x1, y1) => {
+      const strokes = [{ o: 0, w: 20, a: 0.9 }];
+      for (let i = 0; i < 3; i++) {
+        strokes.push({ o: (Math.random() - 0.5) * 26, w: 2 + Math.random() * 4, a: 1 });
+      }
+      if (eraseSeg(side, x0, y0, x1, y1, strokes)) {
+        this.layerRedraw?.(); // viewer layer mirrors the erased canvases
+        scratchLog.push({
+          s: side,
+          x0: Math.round(x0),
+          y0: Math.round(y0),
+          x1: Math.round(x1),
+          y1: Math.round(y1),
+          st: strokes.map((st) => ({
+            o: Math.round(st.o * 10) / 10,
+            w: Math.round(st.w * 10) / 10,
+            a: st.a,
+          })),
+        });
+        // ponytail: hard cap, oldest strokes drop; full-canvas masks if this ever matters
+        if (scratchLog.length > 6000) scratchLog.splice(0, scratchLog.length - 6000);
+      }
+    };
+    this.scratchPersist = () => {
+      try {
+        localStorage.setItem(SCRATCH_KEY, JSON.stringify({ k: stickerJson, v: scratchLog }));
+      } catch {
+        /* storage full or blocked — scratches stay session-only */
+      }
+    };
     this.stickerInfo = (idx) => {
       const en = stickerLoaded.find((s) => s.idx === idx);
-      return en ? { src: en.im.src, size: en.d.size || 25, rot: en.d.rot ?? 0 } : null;
+      return en ? { src: en.im.src, im: en.im, size: en.d.size || 25, rot: en.d.rot ?? 0 } : null;
     };
     // hit test in face-percent space (viewer sticker grab), per card side
     this.stickerHit = (px, py, side) => {

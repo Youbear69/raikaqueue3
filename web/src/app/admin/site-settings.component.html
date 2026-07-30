@@ -176,8 +176,11 @@
           (input)="onStickerSlide(i, 'y', $any($event.target).value, false)"
           (change)="onStickerSlide(i, 'y', $any($event.target).value, true)" />
         <label>ขนาด {{ st.size }}%</label>
-        <input type="range" min="5" max="80" [value]="st.size" style="width: 130px"
+        <input type="range" min="2" max="300" [value]="st.size" style="width: 130px"
           (input)="onStickerSlide(i, 'size', $any($event.target).value, false)"
+          (change)="onStickerSlide(i, 'size', $any($event.target).value, true)" />
+        <input class="m-input" type="number" min="2" [value]="st.size"
+          style="max-width: 70px" title="พิมพ์ขนาดเอง ไม่จำกัด"
           (change)="onStickerSlide(i, 'size', $any($event.target).value, true)" />
         <label>หมุน {{ st.rot }}&deg;</label>
         <input type="range" min="-180" max="180" [value]="st.rot" style="width: 130px"
