@@ -29,6 +29,12 @@ input, button, select, textarea {
   font-family: var(--font-family);
 }
 
+/* Native select popups default to a white list — force theme colors */
+select option {
+  background-color: var(--bg-color);
+  color: var(--text-white);
+}
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-color);

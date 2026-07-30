@@ -11,7 +11,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { firebaseConfig } from '../firebase-config';
-import { DRIVE_API, DriveImage, normalizeImageUrl } from '../shared/drive-url';
+import { DRIVE_API, DriveImage, DriveListing, normalizeImageUrl } from '../shared/drive-url';
 
 export type QueueStatus = 'waiting' | 'playing' | 'played';
 export interface QueueItem {
@@ -420,18 +420,28 @@ export class QueueService {
     update(ref(this.db, 'settings'), { showHands: v });
   }
 
-  async listDriveImages(): Promise<DriveImage[]> {
-    const r = await fetch(`${DRIVE_API}/list`);
-    if (!r.ok) throw new Error('list failed');
-    return r.json();
+  // Session cache so revisiting a folder shows content instantly (stale-while-revalidate)
+  private driveCache = new Map<string, DriveListing>();
+
+  cachedDriveListing(folder?: string): DriveListing | null {
+    return this.driveCache.get(folder || 'root') ?? null;
   }
 
-  async uploadDriveImage(file: File): Promise<DriveImage> {
+  async listDriveImages(folder?: string): Promise<DriveListing> {
+    const r = await fetch(`${DRIVE_API}/list${folder ? '?folder=' + folder : ''}`);
+    if (!r.ok) throw new Error('list failed');
+    const data: DriveListing = await r.json();
+    this.driveCache.set(folder || 'root', data);
+    return data;
+  }
+
+  async uploadDriveImage(file: File, folder?: string): Promise<DriveImage> {
     const u = this.user();
     if (!u) throw new Error('not signed in');
     const token = await u.getIdToken();
     const fd = new FormData();
     fd.append('file', file);
+    if (folder) fd.append('folder', folder);
     const r = await fetch(`${DRIVE_API}/upload`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
@@ -440,6 +450,31 @@ export class QueueService {
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || 'upload failed');
     return body;
+  }
+
+  async createDriveFolder(name: string): Promise<void> {
+    const u = this.user();
+    if (!u) throw new Error('not signed in');
+    const token = await u.getIdToken();
+    const r = await fetch(`${DRIVE_API}/folder`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'create folder failed');
+  }
+
+  // folder = target folder id, null = back to the root folder
+  async moveDriveImage(id: string, folder: string | null): Promise<void> {
+    const u = this.user();
+    if (!u) throw new Error('not signed in');
+    const token = await u.getIdToken();
+    const r = await fetch(`${DRIVE_API}/file/${id}`, {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ parent: folder || 'root' }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'move failed');
   }
 
   async renameDriveImage(id: string, name: string): Promise<void> {

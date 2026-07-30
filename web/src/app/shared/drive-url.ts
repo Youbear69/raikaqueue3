@@ -7,6 +7,16 @@ export interface DriveImage {
   url: string;
 }
 
+export interface DriveFolder {
+  id: string;
+  name: string;
+}
+
+export interface DriveListing {
+  folders: DriveFolder[];
+  images: DriveImage[];
+}
+
 const DRIVE_ID_RE =
   /(?:drive\.google\.com\/(?:file\/d\/([\w-]+)|(?:open|uc|thumbnail)\?[^#]*?\bid=([\w-]+))|img\.meowpow\.online\/i\/([\w-]+))/;
 

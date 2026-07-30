@@ -1,78 +1,196 @@
-<div class="master-card">
+<div class="master-card" [class.drop-hot]="dropTarget() === 'page'" (dragover)="allowDrop($event, 'page')"
+  (dragleave)="dragLeave('page')" (drop)="onDrop($event, curFolder()?.id ?? null)">
   <h3>จัดการรูป</h3>
-  <p style="opacity: 0.7; font-size: 13px">
-    รูปทั้งหมดในโฟลเดอร์ raika-img-uploads บน Google Drive — อัพโหลดที่นี่หรือลากใส่โฟลเดอร์ใน Drive
-    ก็ได้ กดก็อป URL แล้วเอาไปวางช่องรูปได้ทุกที่
-  </p>
+
+  <div class="ex-toolbar">
+    <button class="m-btn" type="button" title="กลับ" [disabled]="!curFolder()"
+      [class.drop-hot]="dropTarget() === 'root'" (click)="openFolder(null)"
+      (dragover)="curFolder() && allowDrop($event, 'root')" (dragleave)="dragLeave('root')"
+      (drop)="onDrop($event, null)">
+      &#8592;
+    </button>
+    <div class="ex-crumb">
+      <span class="crumb-link" (click)="openFolder(null)">รูปทั้งหมด</span>
+      @if (curFolder(); as cf) {
+        <span class="crumb-sep">&rsaquo;</span>
+        <span>{{ cf.name }}</span>
+      }
+    </div>
+    <input class="m-input ex-search" type="search" placeholder="ค้นหา..." [value]="query()"
+      (input)="query.set($any($event.target).value)" />
+  </div>
 
   <div class="m-row">
     <label class="m-btn" [style.opacity]="uploading() || !apiUp() ? 0.5 : 1">
-      {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
-      <input
-        type="file"
-        accept="image/*"
-        hidden
-        [disabled]="uploading() || !apiUp()"
-        (change)="onUpload($event)"
-      />
+      {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูป' }}
+      <input type="file" accept="image/*" multiple hidden [disabled]="uploading() || !apiUp()"
+        (change)="onUpload($event)" />
     </label>
+    @if (!curFolder()) {
+      <button class="m-btn" type="button" [disabled]="!apiUp()" (click)="newFolder()">สร้างโฟลเดอร์</button>
+    }
     <button class="m-btn" type="button" [disabled]="!apiUp()" (click)="refresh()">รีเฟรช</button>
+    <span class="ex-hint">ลากรูปไปวางบนโฟลเดอร์ = ย้าย, ลากไฟล์จากเครื่องมาวาง = อัพโหลด</span>
   </div>
 
-  <div class="m-row">
-    <input
-      class="m-input"
-      type="search"
-      placeholder="ค้นหาชื่อรูป..."
-      [value]="query()"
-      (input)="query.set($any($event.target).value)"
-    />
-  </div>
+  @if (selected().size) {
+    <div class="m-row sel-bar">
+      <strong>เลือกแล้ว {{ selected().size }} รูป</strong>
+      <select class="m-input" style="max-width: 240px; flex: none" #mt>
+        <option value="">ย้ายไป...</option>
+        @for (t of moveTargets(); track t.id) {
+          <option [value]="t.id">{{ t.name }}</option>
+        }
+      </select>
+      <button class="m-btn" type="button" (click)="bulkMove(mt.value); mt.value = ''">ย้าย</button>
+      <button class="m-btn" type="button" (click)="downloadSelected()">ดาวน์โหลด</button>
+      <button class="m-btn im-del" type="button" (click)="bulkDelete()">ลบที่เลือก</button>
+      <button class="m-btn" type="button" (click)="clearSelect()">ยกเลิก</button>
+    </div>
+  }
 
   @if (err()) {
     <div class="im-err">{{ err() }}</div>
   }
 
-  @if (filtered(); as imgs) {
-    <div class="im-grid">
-      @for (img of imgs; track img.id) {
-        <div class="im-card">
-          <img [src]="img.url" [alt]="img.name" loading="lazy" (click)="viewUrl.set(img.url)" />
-          @if (renamingId() === img.id) {
-            <input
-              class="m-input im-rename"
-              type="text"
-              [value]="img.name"
-              (keydown.enter)="rename(img, $any($event.target).value)"
-              (keydown.escape)="renamingId.set('')"
-              (blur)="rename(img, $any($event.target).value)"
-              autofocus
-            />
+  @if (listing()) {
+    <div class="ex-grid" (click)="gridClick($event)" (pointerdown)="gridDown($event)"
+      (pointermove)="gridMove($event)" (pointerup)="gridUp()" (pointercancel)="gridUp()">
+      @if (!curFolder()) {
+        @for (f of filteredFolders(); track f.id) {
+          <div class="ex-tile" [class.drop-hot]="dropTarget() === f.id" (dragover)="allowDrop($event, f.id)"
+            (dragleave)="dragLeave(f.id)" (drop)="onDrop($event, f.id)" (contextmenu)="openCtx($event, f, true)">
+            <svg class="f-icon" viewBox="0 0 48 48" (dblclick)="openFolder(f)" (click)="$event.stopPropagation()">
+              <path fill="#eac355"
+                d="M40 12H22.8l-3.4-3.4A2 2 0 0 0 18 8H8a4 4 0 0 0-4 4v24a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4V16a4 4 0 0 0-4-4z" />
+              <path fill="#f6d57a" d="M44 20H4v16a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4z" />
+            </svg>
+            @if (renamingId() === f.id) {
+              <input class="m-input ex-rename" type="text" [value]="f.name"
+                (keydown.enter)="rename(f, $any($event.target).value)" (keydown.escape)="renamingId.set('')"
+                (blur)="rename(f, $any($event.target).value)" autofocus />
+            } @else {
+              <div class="ex-name" [title]="f.name + ' (คลิกเพื่อเปลี่ยนชื่อ)'" (click)="renamingId.set(f.id)">
+                {{ f.name }}
+              </div>
+            }
+            <div class="ex-actions">
+              <button class="ex-abtn im-del" type="button" (click)="removeFolder(f)">
+                {{ armedId() === f.id ? 'ยืนยัน?' : 'ลบ' }}
+              </button>
+            </div>
+          </div>
+        }
+      }
+      @for (img of filtered(); track img.id; let i = $index) {
+        <div class="ex-tile" draggable="true" [attr.data-id]="img.id" [class.sel]="selected().has(img.id)"
+          (click)="onTileClick($event, img, i)" (dblclick)="viewUrl.set(img.url)"
+          (contextmenu)="openCtx($event, img, false)" (dragstart)="onDragStart($event, img)"
+          (dragend)="onDragEnd()">
+          @if (isGif(img)) {
+            <gif-thumb [src]="img.url" />
           } @else {
-            <div class="im-name" [title]="img.name + ' (คลิกเพื่อเปลี่ยนชื่อ)'" (click)="renamingId.set(img.id)">
+            <img class="thumb" [src]="img.url" [alt]="img.name" loading="lazy" />
+          }
+          @if (renamingId() === img.id) {
+            <input class="m-input ex-rename" type="text" [value]="img.name"
+              (keydown.enter)="rename(img, $any($event.target).value)" (keydown.escape)="renamingId.set('')"
+              (blur)="rename(img, $any($event.target).value)" autofocus (click)="$event.stopPropagation()" />
+          } @else {
+            <div class="ex-name" [title]="img.name + ' (คลิกเพื่อเปลี่ยนชื่อ)'"
+              (click)="$event.stopPropagation(); renamingId.set(img.id)">
               {{ img.name }}
             </div>
           }
-          <div class="im-actions">
-            <button class="m-btn" type="button" (click)="copy(img)">
+          <div class="ex-actions">
+            <button class="ex-abtn" type="button" (click)="copy(img)">
               {{ copiedId() === img.id ? 'ก็อปแล้ว' : 'ก็อป URL' }}
             </button>
-            <button class="m-btn im-del" type="button" (click)="remove(img)">
-              {{ armedId() === img.id ? 'ยืนยันลบ?' : 'ลบ' }}
+            <button class="ex-abtn im-del" type="button" (click)="remove(img)">
+              {{ armedId() === img.id ? 'ยืนยัน?' : 'ลบ' }}
             </button>
           </div>
         </div>
       } @empty {
-        <div class="m-empty">{{ query() ? 'ไม่พบรูปที่ค้นหา' : 'ยังไม่มีรูป' }}</div>
+        @if ((curFolder() || !filteredFolders().length) && !pendingHere().length) {
+          <div class="m-empty">{{ query() ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีรูป' }}</div>
+        }
+      }
+      @if (marquee(); as m) {
+        <div class="marquee" [style.left.px]="m.x" [style.top.px]="m.y" [style.width.px]="m.w"
+          [style.height.px]="m.h"></div>
+      }
+      @for (p of pendingHere(); track p.key) {
+        <div class="ex-tile ghost">
+          @if (p.img) {
+            <img class="thumb" [src]="p.img.url" alt="" />
+          } @else {
+            <div class="thumb ph"></div>
+          }
+          <div class="ex-name">{{ p.name }}</div>
+          <div class="ghost-spin"></div>
+        </div>
       }
     </div>
   } @else {
     <div>กำลังโหลด...</div>
   }
+
+  @if (log().length) {
+    <div class="ex-log">
+      <h3>สถานะล่าสุด</h3>
+      @for (e of log(); track $index) {
+        <div class="ex-log-row" [class.bad]="!e.ok">[{{ e.t }}] {{ e.msg }}</div>
+      }
+    </div>
+  }
+
+  <details class="ex-help">
+    <summary><h3>วิธีใช้งาน</h3></summary>
+    <ul>
+      <li>คลิก = เลือกรูป, Ctrl+คลิก = เลือกเพิ่ม/เอาออก, Shift+คลิก = เลือกช่วง, Ctrl+A = เลือกทั้งหมด, Esc = ยกเลิก</li>
+      <li>ดับเบิลคลิกรูป = ดูเต็มจอ, ดับเบิลคลิกโฟลเดอร์ = เปิดโฟลเดอร์</li>
+      <li>คลิกที่ชื่อ = เปลี่ยนชื่อ (Enter บันทึก, Esc ยกเลิก)</li>
+      <li>ลากรูปวางบนโฟลเดอร์ = ย้ายเข้า, ลากวางบนปุ่ม &#8592; = ย้ายออกจากโฟลเดอร์ (ลากรูปที่เลือกไว้ = ย้ายทั้งชุด)</li>
+      <li>ลากไฟล์รูปจากเครื่องมาวางบนหน้า/บนโฟลเดอร์ = อัพโหลด (เลือกหลายไฟล์ได้)</li>
+      <li>ปุ่ม "ก็อป URL" (hover บนรูป) เอาลิงก์ไปวางช่องรูปได้ทุกที่ในหน้า ตั้งค่า</li>
+      <li>อัพรูป/สร้างโฟลเดอร์ในแอป Google Drive (โฟลเดอร์ raika-img-uploads) ก็แสดงที่นี่เหมือนกัน</li>
+    </ul>
+  </details>
 </div>
 
 @if (viewUrl(); as v) {
   <div class="im-view" (click)="viewUrl.set(null)">
     <img [src]="v" alt="" />
+  </div>
+}
+
+@if (ctx(); as c) {
+  <div class="ctx" [style.left.px]="c.x" [style.top.px]="c.y" (click)="$event.stopPropagation()"
+    (contextmenu)="$event.preventDefault()">
+    @if (!c.isFolder) {
+      <button type="button" (click)="ctxCopy()">คัดลอก URL</button>
+      <button type="button" (click)="ctxDownload()">
+        ดาวน์โหลด{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}
+      </button>
+    }
+    <button type="button" (click)="ctxRename()">แก้ไขชื่อ</button>
+    @if (!c.isFolder && moveTargets().length) {
+      <div class="ctx-group">
+        <div class="ctx-sub">ย้าย{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}ไป...</div>
+        @for (t of moveTargets(); track t.id) {
+          <button type="button" (click)="ctxMove(t.id)">
+            <svg viewBox="0 0 48 48" class="ctx-ficon">
+              <path fill="#eac355"
+                d="M40 12H22.8l-3.4-3.4A2 2 0 0 0 18 8H8a4 4 0 0 0-4 4v24a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4V16a4 4 0 0 0-4-4z" />
+            </svg>
+            {{ t.name }}
+          </button>
+        }
+      </div>
+    }
+    <button type="button" class="im-del" (click)="ctxDelete()">
+      ลบ{{ c.isFolder ? 'โฟลเดอร์' : ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}
+    </button>
   </div>
 }

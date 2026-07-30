@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FeatureFlag, QueueService, Settings } from '../services/queue.service';
-import { DRIVE_API, DriveImage } from '../shared/drive-url';
+import { DRIVE_API, DriveFolder, DriveListing } from '../shared/drive-url';
 
 // Fields the reset button clears (register-page settings only)
 const REG_FIELDS: readonly (keyof Settings)[] = [
@@ -70,8 +70,9 @@ type NumField =
       z-index: 50;
     }
     .pk-box {
-      background: var(--bg, #fff);
-      color: inherit;
+      background: var(--bg-color);
+      border: 1px solid rgba(128, 128, 128, 0.4);
+      color: var(--text-white);
       border-radius: 12px;
       padding: 16px;
       width: min(640px, 92vw);
@@ -132,8 +133,7 @@ type NumField =
       bottom: 16px;
       width: min(480px, 42vw);
       z-index: 40;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(6px);
+      background: var(--bg-color);
       border: 1px solid rgba(128, 128, 128, 0.4);
       border-radius: 12px;
       padding: 8px;
@@ -221,7 +221,8 @@ export class RegisterSettingsComponent implements AfterViewInit {
     handL: 'มือซ้าย',
     handR: 'มือขวา',
   };
-  readonly gallery = signal<DriveImage[] | null>(null);
+  readonly gallery = signal<DriveListing | null>(null);
+  readonly pickFolder = signal<DriveFolder | null>(null);
   readonly uploading = signal(false);
   readonly pickerError = signal('');
 
@@ -236,12 +237,23 @@ export class RegisterSettingsComponent implements AfterViewInit {
 
   async openPicker(target: 'char' | 'handL' | 'handR'): Promise<void> {
     this.picker.set(target);
+    this.pickFolder.set(null);
+    await this.loadGallery();
+  }
+
+  async pickerGo(f: DriveFolder | null): Promise<void> {
+    this.pickFolder.set(f);
+    await this.loadGallery();
+  }
+
+  private async loadGallery(): Promise<void> {
     this.pickerError.set('');
-    this.gallery.set(null);
+    // cached listing shows instantly; fresh data replaces it in the background
+    this.gallery.set(this.svc.cachedDriveListing(this.pickFolder()?.id));
     try {
-      this.gallery.set(await this.svc.listDriveImages());
+      this.gallery.set(await this.svc.listDriveImages(this.pickFolder()?.id));
     } catch {
-      this.gallery.set([]);
+      if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
       this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
     }
   }
@@ -262,7 +274,7 @@ export class RegisterSettingsComponent implements AfterViewInit {
     this.uploading.set(true);
     this.pickerError.set('');
     try {
-      const img = await this.svc.uploadDriveImage(file);
+      const img = await this.svc.uploadDriveImage(file, this.pickFolder()?.id);
       this.pickImage(img.url);
     } catch (err) {
       this.pickerError.set('อัพโหลดไม่สำเร็จ: ' + (err as Error).message);

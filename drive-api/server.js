@@ -87,15 +87,50 @@ app.get('/i/:id', async (req, res) => {
   }
 });
 
+// Only the root folder and its direct children are browsable
+async function childOfRoot(id) {
+  if (id === FOLDER_ID) return true;
+  try {
+    const r = await drive.files.get({ fileId: id, fields: 'parents' });
+    return (r.data.parents || []).includes(FOLDER_ID);
+  } catch {
+    return false;
+  }
+}
+
 app.get('/list', async (req, res) => {
   try {
+    const q = String(req.query.folder || '');
+    const folder = /^[\w-]+$/.test(q) ? q : FOLDER_ID;
+    if (!(await childOfRoot(folder))) return res.status(400).json({ error: 'bad folder' });
     const r = await drive.files.list({
-      q: `'${FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`,
-      fields: 'files(id,name)',
-      orderBy: 'createdTime desc',
+      q: `'${folder}' in parents and trashed=false and (mimeType contains 'image/' or mimeType='application/vnd.google-apps.folder')`,
+      fields: 'files(id,name,mimeType)',
+      orderBy: 'folder,createdTime desc',
       pageSize: 200,
     });
-    res.json(r.data.files.map((f) => ({ id: f.id, name: f.name, url: thumbUrl(f.id) })));
+    const folders = [];
+    const images = [];
+    for (const f of r.data.files) {
+      if (f.mimeType === 'application/vnd.google-apps.folder') folders.push({ id: f.id, name: f.name });
+      else images.push({ id: f.id, name: f.name, url: thumbUrl(f.id) });
+    }
+    res.json({ folders, images });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/folder', requireAdmin, express.json(), async (req, res) => {
+  if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
+  const name = String(req.body?.name || '').trim();
+  if (!name || name.length > 100) return res.status(400).json({ error: 'bad name' });
+  try {
+    const r = await oauthDrive.files.create({
+      requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [FOLDER_ID] },
+      fields: 'id',
+    });
+    res.json({ id: r.data.id, name });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -105,9 +140,12 @@ app.post('/upload', requireAdmin, up.single('file'), async (req, res) => {
   if (!req.file || !req.file.mimetype.startsWith('image/'))
     return res.status(400).json({ error: 'image only' });
   if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
+  const fq = String(req.body?.folder || '');
+  const parent = /^[\w-]+$/.test(fq) ? fq : FOLDER_ID;
+  if (!(await childOfRoot(parent))) return res.status(400).json({ error: 'bad folder' });
   try {
     const r = await oauthDrive.files.create({
-      requestBody: { name: req.file.originalname, parents: [FOLDER_ID] },
+      requestBody: { name: req.file.originalname, parents: [parent] },
       media: { mimeType: req.file.mimetype, body: Readable.from(req.file.buffer) },
       fields: 'id',
     });
@@ -117,16 +155,36 @@ app.post('/upload', requireAdmin, up.single('file'), async (req, res) => {
   }
 });
 
+// Rename ({name}) and/or move ({parent} — folder id or "root")
 app.patch('/file/:id', requireAdmin, express.json(), async (req, res) => {
   if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).json({ error: 'bad id' });
   if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
   const name = String(req.body?.name || '').trim();
-  if (!name || name.length > 100) return res.status(400).json({ error: 'bad name' });
+  let parent = String(req.body?.parent || '').trim();
+  if (parent === 'root') parent = FOLDER_ID;
+  if (!name && !parent) return res.status(400).json({ error: 'nothing to do' });
+  if (name.length > 100 || (parent && !/^[\w-]+$/.test(parent)))
+    return res.status(400).json({ error: 'bad request' });
+  if (parent && !(await childOfRoot(parent))) return res.status(400).json({ error: 'bad folder' });
   try {
-    await oauthDrive.files.update({ fileId: req.params.id, requestBody: { name } });
-    res.json({ ok: true, name });
+    const params = { fileId: req.params.id };
+    if (name) params.requestBody = { name };
+    if (parent) {
+      // SA (reader on the whole folder) sees hand-added files that drive.file can't
+      const cur = await drive.files.get({ fileId: req.params.id, fields: 'parents' });
+      params.addParents = parent;
+      params.removeParents = (cur.data.parents || []).join(',');
+    }
+    try {
+      await oauthDrive.files.update(params);
+    } catch (e) {
+      // hand-added file: drive.file gets 404 (invisible) or 403 (no write grant) —
+      // retry as the SA (shared as Editor on the folder)
+      if (e.code !== 404 && e.code !== 403) throw e;
+      await drive.files.update(params);
+    }
+    res.json({ ok: true });
   } catch (e) {
-    // drive.file scope can't touch files added by hand in Drive
     res.status(e.code === 404 ? 404 : 500).json({ error: e.message });
   }
 });
@@ -135,10 +193,15 @@ app.delete('/file/:id', requireAdmin, async (req, res) => {
   if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).json({ error: 'bad id' });
   if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
   try {
-    await oauthDrive.files.delete({ fileId: req.params.id });
+    try {
+      await oauthDrive.files.delete({ fileId: req.params.id });
+    } catch (e) {
+      // hand-added file (404/403 from drive.file): SA (as Editor) trashes it instead
+      if (e.code !== 404 && e.code !== 403) throw e;
+      await drive.files.update({ fileId: req.params.id, requestBody: { trashed: true } });
+    }
     res.json({ ok: true });
   } catch (e) {
-    // drive.file scope can't touch files added by hand in Drive — delete those in the Drive app
     res.status(e.code === 404 ? 404 : 500).json({ error: e.message });
   }
 });

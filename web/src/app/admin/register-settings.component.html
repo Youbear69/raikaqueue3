@@ -172,9 +172,21 @@
         @if (pickerError()) {
         <div class="pk-err">{{ pickerError() }}</div>
         }
-        @if (gallery(); as imgs) {
+        @if (gallery(); as g) {
+        @if (pickFolder(); as pf) {
+        <div>
+          <button class="m-btn" type="button" (click)="pickerGo(null)">&lsaquo; กลับ</button>
+          <strong>{{ pf.name }}</strong>
+        </div>
+        } @else if (g.folders.length) {
+        <div>
+          @for (f of g.folders; track f.id) {
+          <button class="m-btn" type="button" (click)="pickerGo(f)">{{ f.name }}</button>
+          }
+        </div>
+        }
         <div class="pk-grid">
-          @for (img of imgs; track img.id) {
+          @for (img of g.images; track img.id) {
           <img [src]="img.url" [alt]="img.name" [title]="img.name" (click)="pickImage(img.url)" />
           } @empty {
           <div>ยังไม่มีรูปใน folder</div>

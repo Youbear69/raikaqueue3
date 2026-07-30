@@ -33,7 +33,7 @@ const HOME_FIELDS: readonly (keyof Settings)[] = [
   'lanyardFront',
   'lanyardBack',
 ];
-import { DRIVE_API, DriveImage } from '../shared/drive-url';
+import { DRIVE_API, DriveFolder, DriveListing } from '../shared/drive-url';
 
 @Component({
   selector: 'site-settings-page',
@@ -60,8 +60,9 @@ import { DRIVE_API, DriveImage } from '../shared/drive-url';
       z-index: 50;
     }
     .pk-box {
-      background: var(--bg, #fff);
-      color: inherit;
+      background: var(--bg-color);
+      border: 1px solid rgba(128, 128, 128, 0.4);
+      color: var(--text-white);
       border-radius: 12px;
       padding: 16px;
       width: min(640px, 92vw);
@@ -122,8 +123,7 @@ import { DRIVE_API, DriveImage } from '../shared/drive-url';
       bottom: 16px;
       width: min(480px, 42vw);
       z-index: 40;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(6px);
+      background: var(--bg-color);
       border: 1px solid rgba(128, 128, 128, 0.4);
       border-radius: 12px;
       padding: 8px;
@@ -289,7 +289,8 @@ export class SiteSettingsComponent implements AfterViewInit {
   // the /i/ image proxy is a separate Cloudflare Worker and keeps working)
   readonly apiUp = signal(false);
   readonly picker = signal<'lanyardFront' | 'lanyardBack' | 'charImg' | null>(null);
-  readonly gallery = signal<DriveImage[] | null>(null); // null = loading
+  readonly gallery = signal<DriveListing | null>(null); // null = loading
+  readonly pickFolder = signal<DriveFolder | null>(null);
   readonly uploading = signal(false);
   readonly pickerError = signal('');
 
@@ -301,12 +302,23 @@ export class SiteSettingsComponent implements AfterViewInit {
 
   async openPicker(field: 'lanyardFront' | 'lanyardBack' | 'charImg'): Promise<void> {
     this.picker.set(field);
+    this.pickFolder.set(null);
+    await this.loadGallery();
+  }
+
+  async pickerGo(f: DriveFolder | null): Promise<void> {
+    this.pickFolder.set(f);
+    await this.loadGallery();
+  }
+
+  private async loadGallery(): Promise<void> {
     this.pickerError.set('');
-    this.gallery.set(null);
+    // cached listing shows instantly; fresh data replaces it in the background
+    this.gallery.set(this.svc.cachedDriveListing(this.pickFolder()?.id));
     try {
-      this.gallery.set(await this.svc.listDriveImages());
+      this.gallery.set(await this.svc.listDriveImages(this.pickFolder()?.id));
     } catch {
-      this.gallery.set([]);
+      if (!this.gallery()) this.gallery.set({ folders: [], images: [] });
       this.pickerError.set('โหลดรายการรูปไม่สำเร็จ');
     }
   }
@@ -326,7 +338,7 @@ export class SiteSettingsComponent implements AfterViewInit {
     this.uploading.set(true);
     this.pickerError.set('');
     try {
-      const img = await this.svc.uploadDriveImage(file);
+      const img = await this.svc.uploadDriveImage(file, this.pickFolder()?.id);
       this.pickImage(img.url);
     } catch (err) {
       this.pickerError.set('อัพโหลดไม่สำเร็จ: ' + (err as Error).message);
