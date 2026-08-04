@@ -228,3 +228,27 @@ code {
   transform-origin: 0 0;
   display: block;
 }
+
+.m-subhead {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.m-row-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.m-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.m-hint {
+  margin-top: 10px;
+  color: var(--text-gray);
+  font-size: 0.9rem;
+}

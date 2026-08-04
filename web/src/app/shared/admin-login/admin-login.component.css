@@ -27,3 +27,33 @@
 .login-email {
   color: var(--text-gray);
 }
+
+.login-sep {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-white);
+  font-size: 1rem;
+}
+
+.btn-google:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-err {
+  color: #e66;
+  font-size: 0.95rem;
+}

@@ -2,6 +2,22 @@
   @if (!svc.user()?.email) {
     <h2>สำหรับแอดมิน</h2>
     <button class="btn-google" (click)="svc.loginGoogle()">Sign in with Google</button>
+    <div class="login-sep">หรือ</div>
+    <form class="login-form" (submit)="loginEmail($event, em, pw)">
+      <input #em class="login-input" type="email" placeholder="อีเมล" required autocomplete="username" />
+      <input
+        #pw
+        class="login-input"
+        type="password"
+        placeholder="รหัสผ่าน"
+        required
+        autocomplete="current-password"
+      />
+      <button class="btn-google" type="submit" [disabled]="busy()">เข้าสู่ระบบ</button>
+    </form>
+    @if (err()) {
+      <div class="login-err">{{ err() }}</div>
+    }
   } @else {
     <h2>บัญชีนี้ไม่มีสิทธิ์แอดมิน</h2>
     <div class="login-email">{{ svc.user()?.email }}</div>

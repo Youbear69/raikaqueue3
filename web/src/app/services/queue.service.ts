@@ -1,12 +1,15 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { initializeApp } from 'firebase/app';
+import { getApps, initializeApp } from 'firebase/app';
 import { get, getDatabase, onValue, push, ref, remove, set, update } from 'firebase/database';
 import {
   GoogleAuthProvider,
   User,
+  createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInAnonymously,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
@@ -642,7 +645,63 @@ export class QueueService {
     }
   }
 
+  // Returns an error message, or null on success
+  async loginEmail(email: string, password: string): Promise<string | null> {
+    try {
+      await signInWithEmailAndPassword(this.auth, email.trim(), password);
+      return null;
+    } catch (e) {
+      return authErrorMsg(e);
+    }
+  }
+
+  // Creates an email/password account WITHOUT replacing the current admin
+  // session: createUserWithEmailAndPassword signs in as the new user, so it
+  // runs on a throwaway secondary app whose auth state is discarded.
+  async createUser(email: string, password: string, asAdmin: boolean): Promise<string | null> {
+    email = email.trim().toLowerCase();
+    const app =
+      getApps().find((a) => a.name === 'user-create') ??
+      initializeApp(firebaseConfig, 'user-create');
+    const auth2 = getAuth(app);
+    try {
+      await createUserWithEmailAndPassword(auth2, email, password);
+    } catch (e) {
+      return authErrorMsg(e);
+    } finally {
+      await signOut(auth2).catch(() => {});
+    }
+    if (asAdmin) this.addAdmin(email);
+    return null;
+  }
+
+  resetPassword(email: string): Promise<void> {
+    return sendPasswordResetEmail(this.auth, email.trim());
+  }
+
   logout(): Promise<void> {
     return signOut(this.auth);
+  }
+}
+
+function authErrorMsg(e: unknown): string {
+  const code = (e as { code?: string })?.code ?? '';
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    case 'auth/invalid-email':
+      return 'รูปแบบอีเมลไม่ถูกต้อง';
+    case 'auth/email-already-in-use':
+      return 'อีเมลนี้มีบัญชีอยู่แล้ว';
+    case 'auth/weak-password':
+      return 'รหัสผ่านสั้นเกินไป (ขั้นต่ำ 6 ตัวอักษร)';
+    case 'auth/too-many-requests':
+      return 'ลองผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่';
+    case 'auth/operation-not-allowed':
+      return 'ยังไม่ได้เปิด Email/Password ใน Firebase Console';
+    default:
+      return code || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง';
   }
 }

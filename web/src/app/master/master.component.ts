@@ -93,6 +93,35 @@ export class MasterComponent {
     this.svc.removeAdmin(email);
   }
 
+  readonly userMsg = signal('');
+
+  async createUser(
+    e: Event,
+    em: HTMLInputElement,
+    pw: HTMLInputElement,
+    chk: HTMLInputElement,
+  ): Promise<void> {
+    e.preventDefault();
+    this.userMsg.set('');
+    const email = em.value.trim().toLowerCase();
+    const msg = await this.svc.createUser(email, pw.value, chk.checked);
+    if (msg) {
+      this.userMsg.set(msg);
+    } else {
+      this.userMsg.set(`สร้างบัญชี ${email} แล้ว${chk.checked ? ' (เป็นแอดมิน)' : ''}`);
+      em.value = '';
+      pw.value = '';
+    }
+  }
+
+  resetPassword(email: string): void {
+    if (!confirm(`ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ ${email}?`)) return;
+    this.svc
+      .resetPassword(email)
+      .then(() => this.userMsg.set(`ส่งลิงก์รีเซ็ตรหัสผ่านไปที่ ${email} แล้ว`))
+      .catch(() => this.userMsg.set('ส่งลิงก์ไม่สำเร็จ ลองใหม่อีกครั้ง'));
+  }
+
   formatTime(ts: number): string {
     return new Date(ts).toLocaleString('th-TH', {
       timeZone: 'Asia/Bangkok',
