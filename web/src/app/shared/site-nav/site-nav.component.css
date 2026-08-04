@@ -339,6 +339,7 @@
   inset: 0;
   z-index: 60;
   background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,14 +350,20 @@
   position: relative;
   width: 100%;
   max-width: 360px;
-  background: var(--card-bg, var(--input-bg));
-  border: 1px solid var(--input-border);
+  background: #163610;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 14px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+:host-context(body[data-theme='light']) .auth-modal {
+  background: #f2f9ef;
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .auth-title {
