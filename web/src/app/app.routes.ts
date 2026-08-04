@@ -9,6 +9,7 @@ import { UsersComponent } from './admin/users.component';
 import { ControlComponent } from './control/control.component';
 import { GalleryComponent } from './gallery/gallery.component';
 import { HomeComponent } from './home/home.component';
+import { PrivacyComponent } from './privacy/privacy.component';
 import { MasterComponent } from './master/master.component';
 import { RegisterComponent } from './register/register.component';
 import { WidgetListComponent } from './widget-list/widget-list.component';
@@ -18,6 +19,7 @@ export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'gallery', component: GalleryComponent },
+  { path: 'privacy', component: PrivacyComponent },
   { path: 'widget', component: WidgetComponent },
   { path: 'widget-list', component: WidgetListComponent },
   {

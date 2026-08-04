@@ -455,3 +455,22 @@
 .auth-link:hover {
   color: var(--text-white);
 }
+
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  font-size: 0.92rem;
+  color: var(--text-gray);
+  cursor: pointer;
+}
+
+.auth-consent input {
+  margin-top: 3px;
+}
+
+.auth-consent a {
+  color: var(--text-white);
+  text-decoration: underline;
+}

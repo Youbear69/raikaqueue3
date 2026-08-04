@@ -208,6 +208,12 @@
         [value]="authPw2()"
         (input)="authPw2.set($any($event.target).value)"
       />
+      <label class="auth-consent">
+        <input type="checkbox" required />
+        <span>
+          {{ ui.t().agreeTo }}<a href="/privacy" target="_blank" rel="noopener">{{ ui.t().privacyPolicy }}</a>
+        </span>
+      </label>
       }
       <button class="auth-submit" type="submit" [disabled]="authBusy()">
         {{ authMode() === 'signup' ? ui.t().signup : ui.t().login }}
