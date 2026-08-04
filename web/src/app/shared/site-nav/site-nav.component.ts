@@ -95,7 +95,26 @@ export class SiteNavComponent {
     else this.authOpen.set(false);
   }
 
+  // seconds until the forgot-password button can fire again (anti mail spam;
+  // Firebase also rate-limits server-side, this keeps the quota + UX sane)
+  readonly forgotCooldown = signal(0);
+  private cooldownTimer: ReturnType<typeof setInterval> | null = null;
+
+  private startForgotCooldown(sec = 60): void {
+    this.forgotCooldown.set(sec);
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.cooldownTimer = setInterval(() => {
+      const left = this.forgotCooldown() - 1;
+      this.forgotCooldown.set(left);
+      if (left <= 0 && this.cooldownTimer) {
+        clearInterval(this.cooldownTimer);
+        this.cooldownTimer = null;
+      }
+    }, 1000);
+  }
+
   async authForgot(em: HTMLInputElement): Promise<void> {
+    if (this.forgotCooldown() > 0) return;
     const email = em.value.trim();
     if (!email) {
       this.authErr.set(this.ui.t().enterEmailFirst);
@@ -105,6 +124,7 @@ export class SiteNavComponent {
     try {
       await this.svc.resetPassword(email);
       this.authMsg.set(this.ui.t().resetSent);
+      this.startForgotCooldown();
     } catch {
       this.authErr.set(this.ui.t().resetFail);
     }

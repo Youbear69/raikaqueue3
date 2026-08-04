@@ -474,3 +474,9 @@
   color: var(--text-white);
   text-decoration: underline;
 }
+
+.auth-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+  text-decoration: none;
+}

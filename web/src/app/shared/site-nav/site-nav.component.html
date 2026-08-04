@@ -229,7 +229,14 @@
         {{ authMode() === 'signup' ? ui.t().haveAccount : ui.t().noAccount }}
       </button>
       @if (authMode() === 'login') {
-      <button class="auth-link" type="button" (click)="authForgot(aEm)">{{ ui.t().forgot }}</button>
+      <button
+        class="auth-link"
+        type="button"
+        [disabled]="forgotCooldown() > 0"
+        (click)="authForgot(aEm)"
+      >
+        {{ ui.t().forgot }}{{ forgotCooldown() > 0 ? ' (' + forgotCooldown() + ')' : '' }}
+      </button>
       }
     </div>
   </div>
