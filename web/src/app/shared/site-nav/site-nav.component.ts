@@ -43,4 +43,61 @@ export class SiteNavComponent {
   closeDd(): void {
     this.openDd.set(null);
   }
+
+  readonly authOpen = signal(false);
+  readonly authMode = signal<'login' | 'signup'>('login');
+  readonly authErr = signal('');
+  readonly authMsg = signal('');
+  readonly authBusy = signal(false);
+
+  openAuth(): void {
+    this.authErr.set('');
+    this.authMsg.set('');
+    this.authMode.set('login');
+    this.authOpen.set(true);
+  }
+
+  switchAuthMode(): void {
+    this.authErr.set('');
+    this.authMsg.set('');
+    this.authMode.set(this.authMode() === 'signup' ? 'login' : 'signup');
+  }
+
+  async authGoogle(): Promise<void> {
+    try {
+      await this.svc.loginGoogle();
+      this.authOpen.set(false);
+    } catch {
+      // popup closed / cancelled — keep the modal open
+    }
+  }
+
+  async authSubmit(e: Event, em: HTMLInputElement, pw: HTMLInputElement): Promise<void> {
+    e.preventDefault();
+    this.authErr.set('');
+    this.authMsg.set('');
+    this.authBusy.set(true);
+    const msg =
+      this.authMode() === 'signup'
+        ? await this.svc.signupEmail(em.value, pw.value)
+        : await this.svc.loginEmail(em.value, pw.value);
+    this.authBusy.set(false);
+    if (msg) this.authErr.set(msg);
+    else this.authOpen.set(false);
+  }
+
+  async authForgot(em: HTMLInputElement): Promise<void> {
+    const email = em.value.trim();
+    if (!email) {
+      this.authErr.set(this.ui.t().enterEmailFirst);
+      return;
+    }
+    this.authErr.set('');
+    try {
+      await this.svc.resetPassword(email);
+      this.authMsg.set(this.ui.t().resetSent);
+    } catch {
+      this.authErr.set(this.ui.t().resetFail);
+    }
+  }
 }

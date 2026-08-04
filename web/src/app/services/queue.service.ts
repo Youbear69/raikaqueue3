@@ -2,10 +2,12 @@ import { Injectable, computed, signal } from '@angular/core';
 import { getApps, initializeApp } from 'firebase/app';
 import { get, getDatabase, onValue, push, ref, remove, set, update } from 'firebase/database';
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   User,
   createUserWithEmailAndPassword,
   getAuth,
+  linkWithCredential,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInAnonymously,
@@ -655,6 +657,26 @@ export class QueueService {
     }
   }
 
+  // Self-service signup on the MAIN auth (signs the new user in). An existing
+  // anonymous session is upgraded via link so the uid keeps its queue items
+  // and stats.
+  async signupEmail(email: string, password: string): Promise<string | null> {
+    email = email.trim().toLowerCase();
+    try {
+      const cur = this.auth.currentUser;
+      if (cur?.isAnonymous) {
+        await linkWithCredential(cur, EmailAuthProvider.credential(email, password));
+        // linking mutates the user in place — re-emit so signals see the email
+        await this.auth.updateCurrentUser(this.auth.currentUser);
+      } else {
+        await createUserWithEmailAndPassword(this.auth, email, password);
+      }
+      return null;
+    } catch (e) {
+      return authErrorMsg(e);
+    }
+  }
+
   // Creates an email/password account WITHOUT replacing the current admin
   // session: createUserWithEmailAndPassword signs in as the new user, so it
   // runs on a throwaway secondary app whose auth state is discarded.
@@ -694,6 +716,7 @@ function authErrorMsg(e: unknown): string {
     case 'auth/invalid-email':
       return 'รูปแบบอีเมลไม่ถูกต้อง';
     case 'auth/email-already-in-use':
+    case 'auth/credential-already-in-use':
       return 'อีเมลนี้มีบัญชีอยู่แล้ว';
     case 'auth/weak-password':
       return 'รหัสผ่านสั้นเกินไป (ขั้นต่ำ 6 ตัวอักษร)';
