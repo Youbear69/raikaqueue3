@@ -256,25 +256,39 @@ export class QueueService {
     });
     onValue(ref(this.db, 'winrate'), (snap) => this.winrate.set(snap.val() ?? {}));
     onValue(ref(this.db, 'userStats'), (snap) => this.userStats.set(snap.val() ?? {}));
-    onValue(ref(this.db, 'adminEmails'), (snap) => {
-      const list: string[] = [];
-      snap.forEach((c) => {
-        list.push(String(c.val()));
-      });
-      this.adminEmails.set(list);
-    });
     onAuthStateChanged(this.auth, (user) => {
       this.user.set(user);
       this.adminUnsub?.();
       this.adminUnsub = null;
       if (user?.email) {
-        this.adminUnsub = onValue(ref(this.db, `adminEmails/${encodeEmail(user.email)}`), (snap) =>
-          this.isAdmin.set(snap.exists()),
-        );
+        this.adminUnsub = onValue(ref(this.db, `adminEmails/${encodeEmail(user.email)}`), (snap) => {
+          this.isAdmin.set(snap.exists());
+          this.syncAdminList(snap.exists());
+        });
       } else {
         this.isAdmin.set(false);
+        this.syncAdminList(false);
       }
     });
+  }
+
+  // The full adminEmails list is only readable by admins (rules), so subscribe
+  // just while the current user is one
+  private adminListUnsub: (() => void) | null = null;
+  private syncAdminList(isAdmin: boolean): void {
+    if (isAdmin && !this.adminListUnsub) {
+      this.adminListUnsub = onValue(ref(this.db, 'adminEmails'), (snap) => {
+        const list: string[] = [];
+        snap.forEach((c) => {
+          list.push(String(c.val()));
+        });
+        this.adminEmails.set(list);
+      });
+    } else if (!isAdmin && this.adminListUnsub) {
+      this.adminListUnsub();
+      this.adminListUnsub = null;
+      this.adminEmails.set([]);
+    }
   }
 
   async ensureAnonymousAuth(): Promise<void> {
@@ -640,10 +654,13 @@ export class QueueService {
   async loginGoogle(): Promise<void> {
     const cred = await signInWithPopup(this.auth, new GoogleAuthProvider());
     // Bootstrap: first Google login ever claims admin (rules only allow this
-    // write while adminEmails is still empty)
+    // write while adminEmails is still empty; a denied read means admins
+    // already exist, so there is nothing to bootstrap)
     if (cred.user.email) {
-      const snap = await get(ref(this.db, 'adminEmails'));
-      if (!snap.exists()) this.addAdmin(cred.user.email);
+      try {
+        const snap = await get(ref(this.db, 'adminEmails'));
+        if (!snap.exists()) this.addAdmin(cred.user.email);
+      } catch {}
     }
   }
 
