@@ -49,10 +49,14 @@ export class SiteNavComponent {
   readonly authErr = signal('');
   readonly authMsg = signal('');
   readonly authBusy = signal(false);
+  // confirm-password value lives in a signal because its input sits inside an
+  // @if block, out of scope for the form's (submit) handler
+  readonly authPw2 = signal('');
 
   openAuth(): void {
     this.authErr.set('');
     this.authMsg.set('');
+    this.authPw2.set('');
     this.authMode.set('login');
     this.authOpen.set(true);
   }
@@ -60,6 +64,7 @@ export class SiteNavComponent {
   switchAuthMode(): void {
     this.authErr.set('');
     this.authMsg.set('');
+    this.authPw2.set('');
     this.authMode.set(this.authMode() === 'signup' ? 'login' : 'signup');
   }
 
@@ -76,6 +81,10 @@ export class SiteNavComponent {
     e.preventDefault();
     this.authErr.set('');
     this.authMsg.set('');
+    if (this.authMode() === 'signup' && pw.value !== this.authPw2()) {
+      this.authErr.set(this.ui.t().pwMismatch);
+      return;
+    }
     this.authBusy.set(true);
     const msg =
       this.authMode() === 'signup'

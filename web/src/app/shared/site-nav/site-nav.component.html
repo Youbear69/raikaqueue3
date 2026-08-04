@@ -197,6 +197,18 @@
         minlength="6"
         [autocomplete]="authMode() === 'signup' ? 'new-password' : 'current-password'"
       />
+      @if (authMode() === 'signup') {
+      <input
+        class="auth-input"
+        type="password"
+        [placeholder]="ui.t().confirmPassword"
+        required
+        minlength="6"
+        autocomplete="new-password"
+        [value]="authPw2()"
+        (input)="authPw2.set($any($event.target).value)"
+      />
+      }
       <button class="auth-submit" type="submit" [disabled]="authBusy()">
         {{ authMode() === 'signup' ? ui.t().signup : ui.t().login }}
       </button>
