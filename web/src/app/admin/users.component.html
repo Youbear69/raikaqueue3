@@ -1,0 +1,52 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>จัดการผู้ใช้</h1>
+  </header>
+
+  <section class="master-card">
+    <h3 class="m-subhead">สร้างบัญชีผู้ใช้ (อีเมล + รหัสผ่าน)</h3>
+    <form class="m-row" (submit)="createUser($event, newUserEmail, newUserPass, newUserAdmin)">
+      <input #newUserEmail class="m-input" type="email" placeholder="อีเมล" required />
+      <input
+        #newUserPass
+        class="m-input"
+        type="password"
+        placeholder="รหัสผ่าน (6 ตัวขึ้นไป)"
+        required
+        minlength="6"
+        autocomplete="new-password"
+      />
+      <label class="m-check">
+        <input #newUserAdmin type="checkbox" />
+        ให้สิทธิ์แอดมิน
+      </label>
+      <button class="m-btn" type="submit">สร้างบัญชี</button>
+    </form>
+    @if (userMsg()) {
+      <div class="m-hint">{{ userMsg() }}</div>
+    }
+    <div class="m-hint">
+      user ทั่วไปสมัครเองได้จากปุ่มเข้าสู่ระบบบนเว็บ หน้านี้ไว้สร้างบัญชีให้คนอื่นหรือสร้างแอดมิน
+      — ลบตัวบัญชีจริงทำได้ใน Firebase Console เท่านั้น
+    </div>
+  </section>
+
+  <section class="master-card">
+    <h3 class="m-subhead">แอดมิน (Google หรือบัญชีรหัสผ่าน)</h3>
+    <form class="m-row" (submit)="addAdmin($event, adminInput)">
+      <input #adminInput class="m-input" type="email" placeholder="email@gmail.com" />
+      <button class="m-btn" type="submit">เพิ่มแอดมิน</button>
+    </form>
+    <ul class="master-list">
+      @for (email of svc.adminEmails(); track email) {
+        <li>
+          <span>{{ email }}</span>
+          <span class="m-row-btns">
+            <button class="m-btn" (click)="resetPassword(email)">รีเซ็ตรหัสผ่าน</button>
+            <button class="m-btn danger" (click)="removeAdmin(email)">ลบ</button>
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+</div>

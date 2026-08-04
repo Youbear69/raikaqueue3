@@ -5,6 +5,7 @@ import { ImagesComponent } from './admin/images.component';
 import { NavSettingsComponent } from './admin/nav-settings.component';
 import { RegisterSettingsComponent } from './admin/register-settings.component';
 import { SiteSettingsComponent } from './admin/site-settings.component';
+import { UsersComponent } from './admin/users.component';
 import { ControlComponent } from './control/control.component';
 import { GalleryComponent } from './gallery/gallery.component';
 import { HomeComponent } from './home/home.component';
@@ -30,6 +31,7 @@ export const routes: Routes = [
       { path: 'nav-settings', component: NavSettingsComponent },
       { path: 'gallery-settings', component: GallerySettingsComponent },
       { path: 'images', component: ImagesComponent },
+      { path: 'users', component: UsersComponent },
     ],
   },
   { path: '**', redirectTo: '' },

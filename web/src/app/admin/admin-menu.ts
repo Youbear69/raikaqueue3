@@ -13,4 +13,5 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { label: 'ตั้งค่า site-nav', path: '/nav-settings' },
   { label: 'ตั้งค่าหน้ารูปแจก', path: '/gallery-settings' },
   { label: 'จัดการรูป', path: '/images' },
+  { label: 'จัดการผู้ใช้', path: '/users' },
 ];
