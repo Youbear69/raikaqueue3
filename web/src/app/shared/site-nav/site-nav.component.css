@@ -346,12 +346,15 @@
   padding: 20px;
 }
 
+/* Same glass look as .hero-btn.primary on home */
 .auth-modal {
   position: relative;
   width: 100%;
   max-width: 360px;
-  background: #163610;
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 14px;
   padding: 24px;
   display: flex;
@@ -362,8 +365,9 @@
 }
 
 :host-context(body[data-theme='light']) .auth-modal {
-  background: #f2f9ef;
-  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(15, 43, 19, 0.2);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: #ffffff;
 }
 
 .auth-title {
