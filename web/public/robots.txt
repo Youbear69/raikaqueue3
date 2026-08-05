@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /control
+Disallow: /master
+Disallow: /users
+Disallow: /images
+Disallow: /settings
+Disallow: /register-settings
+Disallow: /nav-settings
+Disallow: /gallery-settings
+Disallow: /widget
+Disallow: /widget-list
+
+Sitemap: https://keroriraika.online/sitemap.xml
