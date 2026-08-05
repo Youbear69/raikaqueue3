@@ -23,7 +23,7 @@ export interface DriveListing {
 }
 
 const DRIVE_ID_RE =
-  /(?:drive\.google\.com\/(?:file\/d\/([\w-]+)|(?:open|uc|thumbnail)\?[^#]*?\bid=([\w-]+))|img\.meowpow\.online\/i\/([\w-]+))/;
+  /(?:drive\.google\.com\/(?:file\/d\/([\w-]+)|(?:open|uc|thumbnail)\?[^#]*?\bid=([\w-]+))|img\.meowpow\.online\/i\/([\w-]+(?:\.gif)?))/;
 
 // Converts a Google Drive share link (file/d/ID, open?id=, uc?id=) into our
 // /i/ image proxy — a Cloudflare Worker at the edge (drive-api/worker/), so it

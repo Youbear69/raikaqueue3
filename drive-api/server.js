@@ -40,7 +40,8 @@ const drive = google.drive({ version: 'v3', auth });
 // CORS + caching + independent of this server being up. This local /i/ route
 // below stays as a fallback if the Worker route is ever removed.
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://img.meowpow.online';
-const thumbUrl = (id) => `${PUBLIC_URL}/i/${id}`;
+// .gif suffix so pasting the URL into Discord animates (Discord keys off the path extension)
+const thumbUrl = (id, mime) => `${PUBLIC_URL}/i/${id}${mime === 'image/gif' ? '.gif' : ''}`;
 
 const app = express();
 app.use((req, res, next) => {
@@ -71,6 +72,7 @@ async function requireAdmin(req, res, next) {
 }
 
 app.get('/i/:id', async (req, res) => {
+  req.params.id = req.params.id.replace(/\.\w{1,5}$/, '');
   if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).end();
   const s = Math.min(4000, Math.max(100, Number(req.query.s) || 1000));
   try {
@@ -113,7 +115,7 @@ app.get('/list', async (req, res) => {
     const images = [];
     for (const f of r.data.files) {
       if (f.mimeType === 'application/vnd.google-apps.folder') folders.push({ id: f.id, name: f.name });
-      else images.push({ id: f.id, name: f.name, url: thumbUrl(f.id) });
+      else images.push({ id: f.id, name: f.name, url: thumbUrl(f.id, f.mimeType) });
     }
     // folder preview: newest image inside each folder (folder count is small)
     await Promise.all(
@@ -121,11 +123,11 @@ app.get('/list', async (req, res) => {
         try {
           const c = await drive.files.list({
             q: `'${f.id}' in parents and mimeType contains 'image/' and trashed=false`,
-            fields: 'files(id)',
+            fields: 'files(id,mimeType)',
             orderBy: 'createdTime desc',
             pageSize: 1,
           });
-          if (c.data.files[0]) f.thumb = thumbUrl(c.data.files[0].id);
+          if (c.data.files[0]) f.thumb = thumbUrl(c.data.files[0].id, c.data.files[0].mimeType);
         } catch {
           // no preview
         }
@@ -165,7 +167,7 @@ app.post('/upload', requireAdmin, up.single('file'), async (req, res) => {
       media: { mimeType: req.file.mimetype, body: Readable.from(req.file.buffer) },
       fields: 'id',
     });
-    res.json({ id: r.data.id, name: req.file.originalname, url: thumbUrl(r.data.id) });
+    res.json({ id: r.data.id, name: req.file.originalname, url: thumbUrl(r.data.id, req.file.mimetype) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
