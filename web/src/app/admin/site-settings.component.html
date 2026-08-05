@@ -21,6 +21,19 @@
       <input class="m-input" placeholder="A website for a not-so-famous VTuber"
         [value]="svc.settings().taglineEn ?? ''" (change)="setText('taglineEn', $any($event.target).value)" />
     </div>
+    <div class="m-row">
+      <label>รูปตอนแชร์ลิงก์ (แนะนำแนวนอน 1200x630, ว่าง = รูปเดิม)</label>
+      <input class="m-input" type="url" placeholder="https://..." [value]="svc.settings().ogImage ?? ''"
+        (change)="setText('ogImage', $any($event.target).value)" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('ogImage')">
+        เลือก/อัพโหลดรูป
+      </button>
+    </div>
+    <p style="opacity: 0.7; font-size: 13px">
+      คำโปรย (ไทย) + รูปนี้ถูกฝังเป็น preview ตอนแชร์ลิงก์ (Discord/X/LINE) ตอน deploy —
+      แก้แล้วต้องกด Run workflow ใน GitHub Actions (หรือรอ push ครั้งถัดไป) ถึงจะอัพเดต
+    </p>
 
     <h3>ปุ่มหน้าแรก</h3>
     <p style="opacity: 0.7; font-size: 13px">

@@ -54,8 +54,9 @@ export interface Settings {
   showHands?: boolean; // hands-holding-card overlay on register (when one card shown)
   siteTitle?: string; // home hero title override (th)
   siteTitleEn?: string; // home hero title override (en)
-  tagline?: string; // home tagline override (th)
+  tagline?: string; // home tagline override (th) — also injected as share-preview description at deploy
   taglineEn?: string; // home tagline override (en)
+  ogImage?: string; // share-preview (OG) image URL — injected into index.html at deploy
   aboutText?: string; // nav About dropdown override (th)
   aboutTextEn?: string; // nav About dropdown override (en)
   lanyardOff?: boolean; // hide the 3D lanyard badge on home
@@ -438,6 +439,7 @@ export class QueueService {
         | 'siteTitleEn'
         | 'tagline'
         | 'taglineEn'
+        | 'ogImage'
         | 'aboutText'
         | 'aboutTextEn'
         | 'schedKey'

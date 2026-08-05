@@ -36,6 +36,33 @@ jobs:
         run: npx ng build
         working-directory: web
 
+      # Share-preview (OG) tags must live in the raw HTML — Discord/X/LINE scrapers
+      # don't run JS. Pull the admin-editable values (settings/tagline + settings/ogImage,
+      # public-read RTDB) and overwrite the static defaults in the built index.html.
+      # Fails open: on any error the static tags from web/src/index.html ship as-is.
+      - name: Inject share meta from site settings
+        working-directory: web
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const F = 'dist/web/browser/index.html';
+          fetch('https://raikaqueue-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json')
+            .then(r => r.json())
+            .then(s => {
+              let h = fs.readFileSync(F, 'utf8');
+              const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+              const put = (re, v) => { if (v) h = h.replace(re, (_, p) => p + esc(v)); };
+              put(/(name="description" content=")[^"]*/, s?.tagline);
+              put(/(property="og:description" content=")[^"]*/, s?.tagline);
+              put(/(name="twitter:description" content=")[^"]*/, s?.tagline);
+              put(/(property="og:image" content=")[^"]*/, s?.ogImage);
+              put(/(name="twitter:image" content=")[^"]*/, s?.ogImage);
+              fs.writeFileSync(F, h);
+              console.log('injected:', { desc: s?.tagline || '(static default)', img: s?.ogImage || '(static default)' });
+            })
+            .catch(e => console.log('inject skipped, static defaults kept:', e.message));
+          EOF
+
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:

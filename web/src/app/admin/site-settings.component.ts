@@ -201,6 +201,7 @@ export class SiteSettingsComponent implements AfterViewInit {
       | 'siteTitleEn'
       | 'tagline'
       | 'taglineEn'
+      | 'ogImage'
       | 'aboutText'
       | 'aboutTextEn'
       | 'schedKey'
@@ -310,6 +311,7 @@ export class SiteSettingsComponent implements AfterViewInit {
     if (field === 'lanyardFront') return 'หน้าบัตร';
     if (field === 'lanyardBack') return 'หลังบัตร';
     if (field === 'charImg') return 'ตัวละคร';
+    if (field === 'ogImage') return 'ตอนแชร์ลิงก์';
     return `สติ๊กเกอร์ #${+field.split('-')[1] + 1}`;
   }
 
@@ -344,6 +346,7 @@ export class SiteSettingsComponent implements AfterViewInit {
   pickImage(url: string): void {
     const f = this.picker();
     if (f === 'charImg') this.svc.setCharImg(url);
+    else if (f === 'ogImage') this.svc.setSiteText({ ogImage: url });
     else if (f?.startsWith('stk-')) this.updateSticker(+f.split('-')[1], 'img', url);
     else if (f) this.svc.setLanyard({ [f]: url });
     this.picker.set(null);
