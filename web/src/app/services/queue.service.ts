@@ -489,8 +489,9 @@ export class QueueService {
       headers: { authorization: `Bearer ${token}` },
       body: fd,
     });
-    const body = await r.json();
-    if (!r.ok) throw new Error(body.error || 'upload failed');
+    // error responses can be non-JSON (proxy/HTML error pages) — don't die parsing them
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.error || `upload failed (${r.status})`);
     return body;
   }
 

@@ -54,7 +54,7 @@ app.use((req, res, next) => {
 
 const up = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 30 * 1024 * 1024 },
 });
 
 async function requireAdmin(req, res, next) {
@@ -222,6 +222,11 @@ app.delete('/file/:id', requireAdmin, async (req, res) => {
   } catch (e) {
     res.status(e.code === 404 ? 404 : 500).json({ error: e.message });
   }
+});
+
+// multer errors (e.g. LIMIT_FILE_SIZE) land here — JSON, not Express's HTML error page
+app.use((err, req, res, next) => {
+  res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 500).json({ error: err.message });
 });
 
 app.listen(PORT, '127.0.0.1', () => console.log(`drive-api on 127.0.0.1:${PORT}`));
