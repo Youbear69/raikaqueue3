@@ -58,14 +58,14 @@ type NumField =
     .pk-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: var(--scrim);
       display: grid;
       place-items: center;
       z-index: 50;
     }
     .pk-box {
-      background: var(--bg-color);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
       color: var(--text-white);
       border-radius: 12px;
       padding: 16px;
@@ -90,10 +90,10 @@ type NumField =
       border: 2px solid transparent;
     }
     .pk-grid img:hover {
-      border-color: #7aa66f;
+      border-color: var(--border-color);
     }
     .pk-err {
-      color: #c0392b;
+      color: var(--danger-red);
     }
     .m-btn:disabled {
       opacity: 0.5;
@@ -102,7 +102,7 @@ type NumField =
     .xy-pad {
       width: 220px;
       height: 220px;
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid var(--border-soft);
       border-radius: 10px;
       position: relative;
       touch-action: none;
@@ -116,8 +116,8 @@ type NumField =
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #7aa66f;
-      border: 2px solid #fff;
+      background: var(--accent);
+      border: 2px solid var(--text-white);
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
@@ -127,14 +127,14 @@ type NumField =
       bottom: 16px;
       width: min(480px, 42vw);
       z-index: 40;
-      background: var(--bg-color);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
       border-radius: 12px;
       padding: 8px;
     }
     :host-context(body[data-theme='light']) .pk-box,
     :host-context(body[data-theme='light']) .float-preview {
-      border-color: rgba(0, 0, 0, 0.12);
+      border-color: var(--border-soft);
     }
     .fp-head {
       display: flex;

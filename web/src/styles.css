@@ -1,20 +1,42 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #0b2507; /* Dark Forest Green from the screenshot */
+  /* 60% dominant — page background */
+  --bg-color: #0b2507; /* Dark Forest Green */
   --grid-color: rgba(22, 69, 14, 0.4);
-  --active-green: #39ff14; /* Neon green */
+
+  /* 30% secondary — surfaces + borders */
+  --surface: #143a1c; /* cards, panels, nav, modals */
+  --surface-2: #1c4f26; /* inputs, hover, nested chips */
+  --border-color: #2e6b39;
+  --border-soft: rgba(46, 107, 57, 0.55);
+
+  /* 10% accent — CTA, active queue item, focus. Nothing else. */
+  --accent: #39ff14;
+  --on-accent: #06230a; /* text on accent surfaces */
+  --accent-glow: rgba(57, 255, 20, 0.25);
+
+  /* text */
+  --text-white: #ffffff;
+  --text-gray: #a9c4ab; /* green-tinted gray (was blue-tinted #bdc3c7) */
+
+  /* semantic status — outside the 60/30/10 budget, status only */
+  --warning-yellow: #f1c40f;
+  --danger-red: #e74c3c;
+
+  /* overlays */
+  --scrim: rgba(0, 0, 0, 0.6);
+
+  /* legacy names kept as aliases while everything migrates to the tokens above */
+  --active-green: var(--accent);
   --playing-green: #2ecc71;
   --playing-gradient-start: #27ae60;
   --playing-gradient-end: #0b5327;
-  --warning-yellow: #f1c40f; /* Yellow */
-  --text-white: #ffffff;
-  --text-gray: #bdc3c7;
   --input-border: #27ae60;
   --input-bg: rgba(39, 174, 96, 0.2);
-  --danger-red: #e74c3c;
   --badge-green: #27ae60;
-  
+  --badge-green-hover: #219653;
+
   --font-family: 'IBM Plex Sans Thai', system-ui, -apple-system, sans-serif;
 }
 
@@ -302,14 +324,14 @@ h1.main-title {
 }
 
 .btn-game-toggle:hover {
-  background-color: #219653;
+  background-color: var(--badge-green-hover);
 }
 
 .game-dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: #1a4213;
+  background-color: var(--surface-2);
   border: 2px solid var(--badge-green);
   border-radius: 4px;
   margin-top: 5px;
@@ -356,14 +378,14 @@ h1.main-title {
 }
 
 .btn-reset-queue:hover {
-  background-color: #219653;
+  background-color: var(--badge-green-hover);
   transform: scale(1.05);
 }
 
 /* Admin Queue Box */
 .admin-queue-box {
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--surface);
+  border: 2px solid var(--border-soft);
   border-radius: 8px;
   padding: 20px;
   flex-grow: 1;
@@ -400,7 +422,7 @@ h1.main-title {
 }
 
 .btn-next-step:hover {
-  background-color: #219653;
+  background-color: var(--badge-green-hover);
   transform: scale(1.1);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
@@ -592,13 +614,13 @@ h1.main-title {
 }
 
 .btn-copy-url:hover {
-  background-color: #219653;
+  background-color: var(--badge-green-hover);
   transform: scale(1.05);
 }
 
 .btn-copy-url.copied {
-  background-color: var(--active-green);
-  color: #0b2507;
+  background-color: var(--accent);
+  color: var(--on-accent);
 }
 
 /* Modal styles for confirmation dialog */
@@ -608,7 +630,7 @@ h1.main-title {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -624,7 +646,7 @@ h1.main-title {
 }
 
 .modal-box {
-  background-color: #163610;
+  background-color: var(--surface);
   border: 3px solid var(--badge-green);
   border-radius: 8px;
   padding: 25px;
@@ -762,8 +784,8 @@ h1.main-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: rgba(0, 0, 0, 0.25);
-  border: 2px solid rgba(39, 174, 96, 0.4);
+  background-color: var(--surface);
+  border: 2px solid var(--border-soft);
   border-radius: 20px;
   padding: 2px 8px 2px 12px;
   height: 38px;
@@ -874,11 +896,27 @@ h1.main-title {
 
 /* Light theme (toggled from home nav; stored in localStorage) */
 body[data-theme='light'] {
-  --bg-color: #cfe5c5;
-  --grid-color: rgba(33, 150, 83, 0.32);
+  /* 60% dominant */
+  --bg-color: #eef6e9;
+  --grid-color: rgba(33, 150, 83, 0.25);
+
+  /* 30% secondary — old page green moves down to surfaces */
+  --surface: #cfe5c5;
+  --surface-2: #dbedd3;
+  --border-color: #9cc39a;
+  --border-soft: rgba(63, 92, 69, 0.35);
+
+  /* 10% accent — neon is unreadable on light, use deep green */
+  --accent: #17803a;
+  --on-accent: #ffffff;
+  --accent-glow: rgba(23, 128, 58, 0.25);
+
+  /* text */
   --text-white: #0f2b13;
-  --text-gray: #38573f;
-  --input-bg: rgba(39, 174, 96, 0.2);
+  --text-gray: #3f5c45;
+
+  --scrim: rgba(15, 43, 19, 0.45);
+  --input-bg: rgba(39, 174, 96, 0.14);
 }
 
 /* Win-rate cards (register + control) */
@@ -892,18 +930,18 @@ body[data-theme='light'] {
 .wr-card {
   flex: 1;
   min-width: 225px;
-  border: 1px solid rgba(39, 174, 96, 0.35);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .wr-card.active {
-  border-color: var(--active-green);
-  box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .wr-head {
@@ -923,8 +961,8 @@ body[data-theme='light'] {
 }
 
 .wr-playing {
-  background: var(--active-green);
-  color: #0b2507;
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 7px;
@@ -991,7 +1029,7 @@ body[data-theme='light'] {
 }
 
 .wr-mine {
-  color: var(--active-green);
+  color: var(--playing-green);
 }
 
 .wr-ctrl {
@@ -1005,8 +1043,8 @@ body[data-theme='light'] {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
   color: var(--text-white);
   font-size: 1rem;
   cursor: pointer;
@@ -1025,7 +1063,7 @@ body[data-theme='light'] {
   object-fit: cover;
   flex: none;
   margin-right: 8px;
-  border: 1px solid rgba(57, 255, 20, 0.4);
+  border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
@@ -1037,7 +1075,7 @@ body[data-theme='light'] {
   border-radius: 6px;
   margin-left: 10px;
   vertical-align: middle;
-  border: 1px solid rgba(57, 255, 20, 0.4);
+  border: 1px solid var(--border-color);
 }
 
 /* Click-to-view photo lightbox */
@@ -1060,7 +1098,7 @@ body[data-theme='light'] {
   max-width: 82vw;
   max-height: 82vh;
   border-radius: 12px;
-  border: 2px solid rgba(57, 255, 20, 0.5);
+  border: 2px solid var(--border-color);
 }
 
 /* Win-rate view toggle (Raika / mine) */
@@ -1073,7 +1111,7 @@ body[data-theme='light'] {
   padding: 3px 12px;
   font-size: 0.72rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--border-soft);
   background: transparent;
   color: var(--text-gray);
   cursor: pointer;
@@ -1118,12 +1156,12 @@ body[data-theme='light'] {
   color: #ffffff;
 }
 
-/* Small WR badge next to queue names */
+/* Small WR badge next to queue names — status chip, not a CTA: no neon */
 .q-wr {
   font-size: 0.72rem;
-  color: var(--active-green);
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(57, 255, 20, 0.35);
+  color: var(--playing-green);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
   padding: 2px 9px;
   white-space: nowrap;
@@ -1168,7 +1206,7 @@ body[data-theme='light'] .register-input::placeholder {
 
 /* Dropdown menu on control page */
 body[data-theme='light'] .game-dropdown-menu {
-  background-color: #f2f9ef;
+  background-color: var(--surface-2);
 }
 
 body[data-theme='light'] .game-dropdown-item:hover {
@@ -1177,7 +1215,7 @@ body[data-theme='light'] .game-dropdown-item:hover {
 
 /* Modals */
 body[data-theme='light'] .modal-box {
-  background: #f2f9ef;
+  background: var(--surface);
   color: var(--text-white);
 }
 

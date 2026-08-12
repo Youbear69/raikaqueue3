@@ -21,7 +21,7 @@ import { downloadImages } from '../shared/download-images';
       display: flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid rgba(128, 128, 128, 0.35);
+      border: 1px solid var(--border-soft);
       border-radius: 8px;
       padding: 9px 14px;
       min-width: 0;
@@ -55,8 +55,8 @@ import { downloadImages } from '../shared/download-images';
     .marquee {
       position: absolute;
       z-index: 5;
-      border: 1px solid #4a9eda;
-      background: rgba(74, 158, 218, 0.25);
+      border: 1px solid var(--accent);
+      background: var(--accent-glow);
       pointer-events: none;
     }
     .ex-tile {
@@ -122,11 +122,11 @@ import { downloadImages } from '../shared/download-images';
       min-width: 0;
     }
     .ex-tile.sel {
-      border-color: #7aa66f;
-      background: rgba(122, 166, 111, 0.12);
+      border-color: var(--accent);
+      background: var(--accent-glow);
     }
     .sel-bar {
-      border: 1px solid rgba(122, 166, 111, 0.5);
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 8px 12px;
     }
@@ -144,16 +144,16 @@ import { downloadImages } from '../shared/download-images';
       font-size: 11px;
       padding: 3px 7px;
       border-radius: 6px;
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      border: 1px solid var(--border-soft);
       background: var(--bg-color);
       color: var(--text-white);
       cursor: pointer;
     }
     .im-del {
-      color: #e74c3c;
+      color: var(--danger-red);
     }
     .im-err {
-      color: #c0392b;
+      color: var(--danger-red);
       margin: 8px 0;
     }
     .ex-tile.ghost {
@@ -173,8 +173,8 @@ import { downloadImages } from '../shared/download-images';
       width: 26px;
       height: 26px;
       margin-left: -13px;
-      border: 3px solid rgba(128, 128, 128, 0.35);
-      border-top-color: #7aa66f;
+      border: 3px solid var(--border-soft);
+      border-top-color: var(--playing-green);
       border-radius: 50%;
       animation: ghost-rot 0.8s linear infinite;
     }
@@ -187,7 +187,7 @@ import { downloadImages } from '../shared/download-images';
       position: fixed;
       z-index: 60;
       background: var(--bg-color);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--border-soft);
       border-radius: 8px;
       padding: 4px;
       display: flex;
@@ -209,13 +209,13 @@ import { downloadImages } from '../shared/download-images';
       background: var(--input-bg);
     }
     .ctx-group {
-      border: 1px solid rgba(122, 166, 111, 0.55);
+      border: 1px solid var(--border-soft);
       border-radius: 6px;
       margin: 4px 4px;
       padding: 2px;
       display: flex;
       flex-direction: column;
-      background: rgba(122, 166, 111, 0.08);
+      background: var(--surface-2);
     }
     .ctx-group button {
       display: flex;
@@ -234,10 +234,10 @@ import { downloadImages } from '../shared/download-images';
       font-weight: 600;
     }
     :host-context(body[data-theme='light']) .ctx {
-      border-color: rgba(0, 0, 0, 0.12);
+      border-color: var(--border-soft);
     }
     .ex-log {
-      border-top: 1px solid rgba(128, 128, 128, 0.3);
+      border-top: 1px solid var(--border-soft);
       padding-top: 10px;
       font-size: 12.5px;
     }
@@ -246,11 +246,11 @@ import { downloadImages } from '../shared/download-images';
       padding: 1px 0;
     }
     .ex-log-row.bad {
-      color: #e74c3c;
+      color: var(--danger-red);
       opacity: 1;
     }
     .ex-help {
-      border-top: 1px solid rgba(128, 128, 128, 0.3);
+      border-top: 1px solid var(--border-soft);
       padding-top: 10px;
       font-size: 13px;
       opacity: 0.75;
@@ -281,8 +281,8 @@ import { downloadImages } from '../shared/download-images';
       gap: 3px;
     }
     .drop-hot {
-      border-color: #7aa66f !important;
-      background: rgba(122, 166, 111, 0.18);
+      border-color: var(--border-color) !important;
+      background: var(--surface-2);
     }
     .m-btn:disabled {
       opacity: 0.5;
@@ -291,7 +291,7 @@ import { downloadImages } from '../shared/download-images';
     .im-view {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: var(--scrim);
       display: grid;
       place-items: center;
       z-index: 50;

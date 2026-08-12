@@ -10,8 +10,8 @@
 }
 
 .a-card {
-  border: 1px solid rgba(39, 174, 96, 0.35);
-  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
   border-radius: 12px;
   padding: 18px;
   display: flex;

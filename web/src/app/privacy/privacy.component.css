@@ -7,8 +7,8 @@
 }
 
 .privacy-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 14px;
@@ -41,13 +41,7 @@
 .privacy-en {
   margin-top: 26px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--border-soft);
   color: var(--text-gray);
   font-size: 0.92rem;
-}
-
-:host-context(body[data-theme='light']) .privacy-card {
-  background: rgba(15, 43, 19, 0.2);
-  border-color: rgba(0, 0, 0, 0.14);
-  color: #ffffff;
 }

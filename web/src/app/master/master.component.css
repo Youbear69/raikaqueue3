@@ -32,7 +32,7 @@
 .m-tab {
   padding: 10px 18px;
   border-radius: 8px 8px 0 0;
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--border-color);
   border-bottom: none;
   background: transparent;
   color: var(--text-gray);
@@ -41,14 +41,14 @@
 }
 
 .m-tab.active {
-  background: var(--input-bg);
+  background: var(--surface);
   color: var(--text-white);
 }
 
 .master-card {
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--border-color);
   border-radius: 0 10px 10px 10px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--surface);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -109,7 +109,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px solid rgba(39, 174, 96, 0.35);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   flex-wrap: wrap;
 }
@@ -120,7 +120,7 @@
 }
 
 .m-active {
-  color: var(--active-green);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -138,15 +138,15 @@
 .master-table td {
   text-align: left;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(39, 174, 96, 0.35);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .master-table th {
-  color: var(--active-green);
+  color: var(--playing-green);
 }
 
 code {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--surface-2);
   padding: 6px 10px;
   border-radius: 6px;
   user-select: all;
@@ -159,11 +159,11 @@ code {
 }
 
 .home-preview {
-  border: 1px solid rgba(39, 174, 96, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   background:
     linear-gradient(to bottom, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.2) 60%),
-    #0b2507;
+    var(--bg-color);
   padding: 26px 20px 30px;
   display: flex;
   flex-direction: column;
@@ -175,10 +175,10 @@ code {
 .hp-about {
   align-self: flex-end;
   max-width: 320px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: rgba(5, 12, 4, 0.9);
-  color: #bdc3c7;
+  background: var(--surface);
+  color: var(--text-gray);
   font-size: 0.8rem;
   padding: 8px 12px;
   text-align: left;
@@ -187,39 +187,39 @@ code {
 .hp-title {
   font-size: 2.2rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-white);
   text-shadow: 0 0 24px rgba(57, 255, 20, 0.3);
 }
 
 .hp-tagline {
-  color: #ffffff;
+  color: var(--text-white);
   font-size: 1rem;
 }
 
 .hp-btn {
   padding: 9px 22px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  color: var(--text-white);
   font-size: 0.95rem;
 }
 
 .hp-frame {
   width: 100%;
   height: 660px;
-  border: 1px solid rgba(39, 174, 96, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: #0b2507;
+  background: var(--bg-color);
   display: block;
 }
 
 .hp-frame-wrap {
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(39, 174, 96, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: #0b2507;
+  background: var(--bg-color);
 }
 
 .hp-frame-wrap .hp-frame {

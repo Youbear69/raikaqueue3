@@ -54,6 +54,6 @@
 }
 
 .login-err {
-  color: #e66;
+  color: var(--danger-red);
   font-size: 0.95rem;
 }

@@ -76,14 +76,14 @@
 
 .reg-form .register-input:focus {
   outline: none;
-  border-color: var(--active-green);
-  box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .reg-card {
   width: 100%;
-  border: 1px solid rgba(39, 174, 96, 0.35);
-  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 14px;
@@ -149,8 +149,8 @@
   width: 110px;
   height: 110px;
   border-radius: 12px;
-  border: 1px solid rgba(57, 255, 20, 0.4);
-  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,7 +189,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--input-border);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--surface-2);
   color: var(--text-white);
   font-size: 0.9rem;
   width: 100%;
@@ -201,7 +201,7 @@
 }
 
 .rm-url-status.ok {
-  color: var(--active-green);
+  color: var(--playing-green);
 }
 
 .rm-url-status.bad {
@@ -209,7 +209,7 @@
 }
 
 .rm-terms {
-  border-top: 1px solid rgba(39, 174, 96, 0.35);
+  border-top: 1px solid var(--border-soft);
   padding-top: 12px;
   margin-bottom: 14px;
   display: flex;
@@ -274,7 +274,7 @@
 .wr-float .wr-card {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--surface-2);
 }
 
 :host-context(body[data-theme='light']) .wr-float .wr-card {
