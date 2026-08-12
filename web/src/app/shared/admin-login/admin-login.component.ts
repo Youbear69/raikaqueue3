@@ -10,6 +10,7 @@ export class AdminLoginComponent {
   readonly svc = inject(QueueService);
   readonly err = signal('');
   readonly busy = signal(false);
+  readonly showPw = signal(false);
 
   async loginEmail(e: Event, em: HTMLInputElement, pw: HTMLInputElement): Promise<void> {
     e.preventDefault();
