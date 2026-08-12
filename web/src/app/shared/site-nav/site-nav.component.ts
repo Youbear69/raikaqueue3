@@ -61,6 +61,13 @@ export class SiteNavComponent {
     this.authOpen.set(true);
   }
 
+  setAuthMode(mode: 'login' | 'signup'): void {
+    if (this.authMode() === mode) return;
+    this.authErr.set('');
+    this.authMsg.set('');
+    this.authMode.set(mode);
+  }
+
   switchAuthMode(): void {
     this.authErr.set('');
     this.authMsg.set('');
@@ -98,6 +105,7 @@ export class SiteNavComponent {
   // seconds until the forgot-password button can fire again (anti mail spam;
   // Firebase also rate-limits server-side, this keeps the quota + UX sane)
   readonly forgotCooldown = signal(0);
+  readonly authShowPw = signal(false);
   private cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
   private startForgotCooldown(sec = 60): void {
