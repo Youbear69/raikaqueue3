@@ -159,31 +159,22 @@
   font-size: 0.9rem;
 }
 
-/* EasyDonate text badge (no official icon) — mimics their logo layout */
+/* EasyDonate official brand plate (assets/easydonate.png, bg + rounding baked in) */
 .ed-badge {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  line-height: 1.05;
-  background: linear-gradient(135deg, #04040a 0%, #0d1a9e 55%, #2b5cff 100%);
+  align-items: center;
   border-radius: 6px;
-  padding: 4px 7px;
-  text-decoration: none;
-  font-weight: 800;
-  font-size: 0.62rem;
-  letter-spacing: 0.2px;
 }
 
 .ed-badge:hover {
   box-shadow: 0 0 10px rgba(43, 92, 255, 0.6);
 }
 
-.ed-easy {
-  color: #3d63ff;
-}
-
-.ed-donate {
-  color: #ffffff;
+.ed-img {
+  height: 26px;
+  width: auto;
+  display: block;
+  border-radius: 6px;
 }
 
 /* Discord placeholder: no server yet */
