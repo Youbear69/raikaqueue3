@@ -1,0 +1,8 @@
+<div
+  class="raika-widget-list"
+  #box
+  [style.backgroundColor]="'rgba(0, 0, 0, ' + svc.settings().listOpacity + ')'"
+>
+  <div class="lw-title">{{ svc.settings().activeGame }}</div>
+  <lw-rows />
+</div>

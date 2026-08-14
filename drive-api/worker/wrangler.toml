@@ -1,0 +1,7 @@
+name = "raika-img-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+routes = [
+  { pattern = "img.meowpow.online/i/*", zone_name = "meowpow.online" },
+]

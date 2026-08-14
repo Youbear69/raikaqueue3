@@ -1,0 +1,13 @@
+{
+  "name": "raikaqueue-drive-api",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "firebase-admin": "13.0.2",
+    "googleapis": "144.0.0",
+    "multer": "2.0.2"
+  }
+}

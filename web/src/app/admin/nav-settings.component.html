@@ -1,0 +1,71 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>ตั้งค่า site-nav</h1>
+    <button class="m-btn" type="button" (click)="reset()">ล้างการตั้งค่า (ค่าเริ่มต้น)</button>
+  </header>
+
+  <section class="master-card settings-card">
+    <h3>แบรนด์</h3>
+    <div class="m-row">
+      <label>ชื่อบนแถบเมนู</label>
+      <input class="m-input" placeholder="Kerori Raika" [value]="val('navTitle')"
+        (change)="setText('navTitle', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <label>โลโก้ (URL รูป, เว้นว่าง = รูปเดิม — ก็อป URL จากหน้า จัดการรูป ได้)</label>
+      <input class="m-input" type="url" placeholder="https://..." [value]="val('navLogo')"
+        (change)="setText('navLogo', $any($event.target).value)" />
+    </div>
+
+    <h3>ข้อความ About</h3>
+    <div class="m-row">
+      <label>About (ไทย / EN)</label>
+      <input class="m-input" placeholder="เว็บของ Kerori Raika (ไทย)" [value]="val('aboutText')"
+        (change)="setText('aboutText', $any($event.target).value)" />
+      <input class="m-input" placeholder="The website of Kerori Raika (EN)" [value]="val('aboutTextEn')"
+        (change)="setText('aboutTextEn', $any($event.target).value)" />
+    </div>
+
+    <h3>เมนู</h3>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="flagOn('navFeaturesOff')" (change)="onFlag('navFeaturesOff', $event)" />
+        แสดงเมนู ฟีเจอร์
+      </label>
+      <label>
+        <input type="checkbox" [checked]="flagOn('navAdminOff')" (change)="onFlag('navAdminOff', $event)" />
+        แสดงเมนู Admin (เฉพาะ admin เห็นอยู่แล้ว)
+      </label>
+    </div>
+    <p style="opacity: 0.7; font-size: 13px">
+      รายการในเมนู ฟีเจอร์ — ไม่มีรายการ = ลิงก์ "ลงคิว" เดิม, URL ขึ้นต้น / = หน้าในเว็บ
+    </p>
+    @for (b of featureItems(); track $index; let i = $index) {
+      <div class="m-row">
+        <input class="m-input" style="max-width: 180px" placeholder="ข้อความ (ไทย)" [value]="b.th"
+          (change)="updateItem(i, 'th', $any($event.target).value)" />
+        <input class="m-input" style="max-width: 180px" placeholder="Text (EN)" [value]="b.en"
+          (change)="updateItem(i, 'en', $any($event.target).value)" />
+        <input class="m-input" placeholder="/register หรือ https://..." [value]="b.url"
+          (change)="updateItem(i, 'url', $any($event.target).value)" />
+        <button class="m-btn" type="button" (click)="delItem(i)">ลบ</button>
+      </div>
+    }
+    <div class="m-row">
+      <button class="m-btn" type="button" (click)="addItem()">เพิ่มรายการ</button>
+    </div>
+
+    <h3>ลิงก์ social</h3>
+    <p style="opacity: 0.7; font-size: 13px">ติ๊ก = แสดงไอคอน, ช่อง URL เว้นว่าง = ลิงก์เดิม</p>
+    @for (s of socials; track s.flag) {
+      <div class="m-row">
+        <label style="min-width: 110px">
+          <input type="checkbox" [checked]="flagOn(s.flag)" (change)="onFlag(s.flag, $event)" />
+          {{ s.label }}
+        </label>
+        <input class="m-input" type="url" [placeholder]="s.def" [value]="val(s.url)"
+          (change)="setText(s.url, $any($event.target).value)" />
+      </div>
+    }
+  </section>
+</div>
