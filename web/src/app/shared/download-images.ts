@@ -1,14 +1,18 @@
 import { zipSync } from 'fflate';
+import { driveFileUrl } from './drive-url';
 
 export interface DownloadableImage {
+  id: string;
   name: string;
   url: string;
 }
 
-// ?s=4000 clamps to the original resolution on the image proxy
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  const r = await fetch(`${url}?s=4000`);
-  if (!r.ok) throw new Error(String(r.status));
+// Original file from the drive-api (/f/). If the home server is down, a picture
+// still downloads from the edge thumbnail proxy (?s=4000 = re-encoded, max 4000 px).
+async function fetchBytes(im: DownloadableImage): Promise<Uint8Array> {
+  let r = await fetch(driveFileUrl(im.id)).catch(() => null);
+  if (!r?.ok && im.url.includes('/i/')) r = await fetch(`${im.url}?s=4000`);
+  if (!r?.ok) throw new Error(String(r?.status ?? 'network'));
   return new Uint8Array(await r.arrayBuffer());
 }
 
@@ -20,7 +24,7 @@ function saveBlob(blob: Blob, name: string): void {
   URL.revokeObjectURL(a.href);
 }
 
-// One image downloads as-is; more than one is bundled into a single .zip
+// One file downloads as-is; more than one is bundled into a single .zip
 export async function downloadImages(
   imgs: DownloadableImage[],
   zipName = 'raika-images.zip',
@@ -28,7 +32,7 @@ export async function downloadImages(
 ): Promise<void> {
   if (imgs.length === 1) {
     try {
-      saveBlob(new Blob([(await fetchBytes(imgs[0].url)) as BlobPart]), imgs[0].name);
+      saveBlob(new Blob([(await fetchBytes(imgs[0])) as BlobPart]), imgs[0].name);
       onResult?.(imgs[0].name, true);
     } catch {
       onResult?.(imgs[0].name, false);
@@ -41,13 +45,13 @@ export async function downloadImages(
       let n = im.name;
       let k = 1;
       while (files[n]) n = im.name.replace(/(\.[^.]*)?$/, ` (${k++})$1`);
-      files[n] = await fetchBytes(im.url);
+      files[n] = await fetchBytes(im);
       onResult?.(im.name, true);
     } catch {
       onResult?.(im.name, false);
     }
   }
   if (!Object.keys(files).length) return;
-  // level 0 (store): images are already compressed, zip is just a container
+  // level 0 (store): fast, and most files (images, video, zip) are already compressed
   saveBlob(new Blob([zipSync(files, { level: 0 }) as BlobPart]), zipName);
 }

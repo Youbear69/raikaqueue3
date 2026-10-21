@@ -288,6 +288,22 @@ import { downloadImages } from '../shared/download-images';
       opacity: 0.5;
       cursor: not-allowed;
     }
+    .ex-file {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      cursor: pointer;
+    }
+    .ex-ext {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 22px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--on-accent);
+    }
     .im-view {
       position: fixed;
       inset: 0;
@@ -331,6 +347,24 @@ export class ImagesComponent {
 
   constructor() {
     this.refresh();
+  }
+
+  // The service listing keeps pictures and other files apart (pickers want pictures
+  // only); this page shows both in one grid, so other files join `images` flagged.
+  private norm(l: DriveListing | null): DriveListing | null {
+    if (!l?.files?.length) return l;
+    return { folders: l.folders, images: [...l.images, ...l.files.map((f) => ({ ...f, file: true }))] };
+  }
+
+  ext(item: DriveImage): string {
+    const m = item.name.match(/\.(\w{1,5})$/);
+    return m ? m[1].toUpperCase() : 'FILE';
+  }
+
+  // double click: pictures open full screen, other files download
+  open(item: DriveImage): void {
+    if (item.file) this.downloadIds([item.id]);
+    else this.viewUrl.set(item.url);
   }
 
   isGif(img: DriveImage): boolean {
@@ -469,7 +503,7 @@ export class ImagesComponent {
   private async sync(): Promise<void> {
     const seq = ++this.reqSeq;
     try {
-      const data = await this.svc.listDriveImages(this.curFolder()?.id);
+      const data = this.norm(await this.svc.listDriveImages(this.curFolder()?.id));
       if (seq === this.reqSeq) {
         this.listing.set(data);
         this.apiUp.set(true);
@@ -518,10 +552,10 @@ export class ImagesComponent {
       }
     }
     if (failed) {
-      this.addLog(`ย้ายไม่สำเร็จ ${failed} รูป`, false);
+      this.addLog(`ย้ายไม่สำเร็จ ${failed} รายการ`, false);
       await this.refresh();
     } else {
-      this.addLog(`ย้าย ${ids.length} รูปไป "${tname}"`);
+      this.addLog(`ย้าย ${ids.length} รายการไป "${tname}"`);
       // fetch the fresh listing first, THEN drop the ghosts — no flicker gap
       await this.sync();
     }
@@ -545,17 +579,17 @@ export class ImagesComponent {
       }
     }
     if (failed) {
-      this.addLog(`ลบไม่สำเร็จ ${failed} รูป`, false);
+      this.addLog(`ลบไม่สำเร็จ ${failed} รายการ`, false);
       await this.refresh();
     } else {
-      this.addLog(`ลบ ${ids.length} รูป`);
+      this.addLog(`ลบ ${ids.length} รายการ`);
       this.sync();
     }
   }
 
   async bulkDelete(): Promise<void> {
     const ids = Array.from(this.selected());
-    if (!ids.length || !confirm(`ลบ ${ids.length} รูปที่เลือก?`)) return;
+    if (!ids.length || !confirm(`ลบ ${ids.length} รายการที่เลือก?`)) return;
     await this.doDelete(ids);
   }
 
@@ -563,10 +597,10 @@ export class ImagesComponent {
     const seq = ++this.reqSeq;
     this.clearSelect();
     // show the cached listing instantly; "กำลังโหลด" only on the first visit
-    this.listing.set(this.svc.cachedDriveListing(this.curFolder()?.id));
+    this.listing.set(this.norm(this.svc.cachedDriveListing(this.curFolder()?.id)));
     this.err.set('');
     try {
-      const data = await this.svc.listDriveImages(this.curFolder()?.id);
+      const data = this.norm(await this.svc.listDriveImages(this.curFolder()?.id));
       if (seq !== this.reqSeq) return; // navigated elsewhere while loading
       this.listing.set(data);
       this.apiUp.set(true);
@@ -664,10 +698,10 @@ export class ImagesComponent {
   }
 
   // ---- download: single file as-is, multiple bundled into one zip ----
-  private async downloadIds(ids: string[]): Promise<void> {
+  async downloadIds(ids: string[]): Promise<void> {
     const imgs = (this.listing()?.images ?? []).filter((i) => ids.includes(i.id));
     if (!imgs.length) return;
-    await downloadImages(imgs, 'raika-images.zip', (name, ok) =>
+    await downloadImages(imgs, 'raika-files.zip', (name, ok) =>
       this.addLog(ok ? `ดาวน์โหลด "${name}"` : `ดาวน์โหลด "${name}" ไม่สำเร็จ`, ok),
     );
   }
@@ -712,7 +746,7 @@ export class ImagesComponent {
     if (c.isFolder) {
       if (confirm(`ลบโฟลเดอร์ "${c.name}" ทั้งโฟลเดอร์?`))
         await this.doRemoveFolder({ id: c.id, name: c.name });
-    } else if (confirm(`ลบ ${ids.length} รูป?`)) {
+    } else if (confirm(`ลบ ${ids.length} รายการ?`)) {
       await this.doDelete(ids);
     }
   }
@@ -729,7 +763,11 @@ export class ImagesComponent {
     this.err.set('');
     const keys: string[] = [];
     for (const f of Array.from(files)) {
-      if (!f.type.startsWith('image/')) continue;
+      // 100 MB = the server/tunnel cap; refuse here instead of uploading for nothing
+      if (f.size > 100 * 1024 * 1024) {
+        this.addLog(`"${f.name}" ใหญ่เกิน 100 MB อัพโหลดไม่ได้`, false);
+        continue;
+      }
       const key = f.name + Date.now();
       keys.push(key);
       this.pending.update((p) => [...p, { key, name: f.name, target: folder ?? null }]);

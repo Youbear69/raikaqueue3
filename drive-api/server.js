@@ -1,9 +1,11 @@
-// ponytail: single-file API — upload images into one shared Google Drive folder + list them.
+// ponytail: single-file API — upload files (any type) into one shared Google Drive folder, list + download them.
 // Run behind cloudflared; binds 127.0.0.1 only.
 const express = require('express');
 const multer = require('multer');
 const { google } = require('googleapis');
 const { Readable } = require('stream');
+const fs = require('fs');
+const os = require('os');
 const admin = require('firebase-admin');
 
 const PORT = Number(process.env.PORT || 8790);
@@ -42,6 +44,10 @@ const drive = google.drive({ version: 'v3', auth });
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://img.meowpow.online';
 // .gif suffix so pasting the URL into Discord animates (Discord keys off the path extension)
 const thumbUrl = (id, mime) => `${PUBLIC_URL}/i/${id}${mime === 'image/gif' ? '.gif' : ''}`;
+// original bytes of any file (download), served by this server via /f/
+const fileUrl = (id) => `${PUBLIC_URL}/f/${id}`;
+// Drive thumbnails exist for images only; svg comes back rasterized, so treat it as a file
+const isImage = (mime) => (mime || '').startsWith('image/') && mime !== 'image/svg+xml';
 
 const app = express();
 app.use((req, res, next) => {
@@ -52,9 +58,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// 100 MB = Cloudflare tunnel's request body cap (free plan). Spooled to disk, not RAM.
 const up = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 30 * 1024 * 1024 },
+  storage: multer.diskStorage({ destination: os.tmpdir() }),
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 async function requireAdmin(req, res, next) {
@@ -106,16 +113,19 @@ app.get('/list', async (req, res) => {
     const folder = /^[\w-]+$/.test(q) ? q : FOLDER_ID;
     if (!(await childOfRoot(folder))) return res.status(400).json({ error: 'bad folder' });
     const r = await drive.files.list({
-      q: `'${folder}' in parents and trashed=false and (mimeType contains 'image/' or mimeType='application/vnd.google-apps.folder')`,
-      fields: 'files(id,name,mimeType)',
+      q: `'${folder}' in parents and trashed=false`,
+      fields: 'files(id,name,mimeType,size)',
       orderBy: 'folder,createdTime desc',
       pageSize: 200,
     });
     const folders = [];
-    const images = [];
+    const images = []; // pictures only: the image pickers and /gallery read this
+    const files = []; // everything else (zip, pdf, video, ...): only the file manager shows these
     for (const f of r.data.files) {
       if (f.mimeType === 'application/vnd.google-apps.folder') folders.push({ id: f.id, name: f.name });
-      else images.push({ id: f.id, name: f.name, url: thumbUrl(f.id, f.mimeType) });
+      else if (f.mimeType.startsWith('application/vnd.google-apps.')) continue; // Docs/Sheets: no bytes to download
+      else if (isImage(f.mimeType)) images.push({ id: f.id, name: f.name, url: thumbUrl(f.id, f.mimeType) });
+      else files.push({ id: f.id, name: f.name, url: fileUrl(f.id), mime: f.mimeType, size: Number(f.size) || 0 });
     }
     // folder preview: newest image inside each folder (folder count is small)
     await Promise.all(
@@ -133,7 +143,7 @@ app.get('/list', async (req, res) => {
         }
       }),
     );
-    res.json({ folders, images });
+    res.json({ folders, images, files });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -155,21 +165,49 @@ app.post('/folder', requireAdmin, express.json(), async (req, res) => {
 });
 
 app.post('/upload', requireAdmin, up.single('file'), async (req, res) => {
-  if (!req.file || !req.file.mimetype.startsWith('image/'))
-    return res.status(400).json({ error: 'image only' });
-  if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
-  const fq = String(req.body?.folder || '');
-  const parent = /^[\w-]+$/.test(fq) ? fq : FOLDER_ID;
-  if (!(await childOfRoot(parent))) return res.status(400).json({ error: 'bad folder' });
+  const tmp = req.file?.path;
   try {
+    if (!req.file) return res.status(400).json({ error: 'no file' });
+    if (!oauthDrive) return res.status(503).json({ error: 'oauth not set up' });
+    const fq = String(req.body?.folder || '');
+    const parent = /^[\w-]+$/.test(fq) ? fq : FOLDER_ID;
+    if (!(await childOfRoot(parent))) return res.status(400).json({ error: 'bad folder' });
+    // busboy hands the multipart filename over as latin1; Thai names need utf8
+    const name = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+    const mime = req.file.mimetype || 'application/octet-stream';
     const r = await oauthDrive.files.create({
-      requestBody: { name: req.file.originalname, parents: [parent] },
-      media: { mimeType: req.file.mimetype, body: Readable.from(req.file.buffer) },
+      requestBody: { name, parents: [parent] },
+      media: { mimeType: mime, body: fs.createReadStream(tmp) },
       fields: 'id',
     });
-    res.json({ id: r.data.id, name: req.file.originalname, url: thumbUrl(r.data.id, req.file.mimetype) });
+    const id = r.data.id;
+    res.json({ id, name, url: isImage(mime) ? thumbUrl(id, mime) : fileUrl(id), mime });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  } finally {
+    if (tmp) fs.unlink(tmp, () => {});
+  }
+});
+
+// Original bytes of a file in the site folder (root or one level down), always as a
+// download: attachment + nosniff, so an uploaded .html/.svg never runs as a page here.
+app.get('/f/:id', async (req, res) => {
+  if (!/^[\w-]+$/.test(req.params.id)) return res.status(400).json({ error: 'bad id' });
+  try {
+    const meta = await drive.files.get({ fileId: req.params.id, fields: 'name,mimeType,size,parents,trashed' });
+    const parents = meta.data.parents || [];
+    const inside = parents.includes(FOLDER_ID) || (await Promise.all(parents.map(childOfRoot))).some(Boolean);
+    if (!inside || meta.data.trashed || meta.data.mimeType.startsWith('application/vnd.google-apps.'))
+      return res.status(404).json({ error: 'not found' });
+    const r = await drive.files.get({ fileId: req.params.id, alt: 'media' }, { responseType: 'stream' });
+    res.set('content-type', meta.data.mimeType || 'application/octet-stream');
+    if (meta.data.size) res.set('content-length', meta.data.size);
+    res.set('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(meta.data.name).replace(/['()*]/g, (c) => '%' + c.charCodeAt(0).toString(16))}`);
+    res.set('x-content-type-options', 'nosniff');
+    res.set('cache-control', 'public, max-age=3600');
+    r.data.on('error', () => res.destroy()).pipe(res);
+  } catch (e) {
+    res.status(e.code === 404 ? 404 : 502).json({ error: e.code === 404 ? 'not found' : e.message });
   }
 });
 

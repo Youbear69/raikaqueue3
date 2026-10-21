@@ -8,7 +8,9 @@ export const DRIVE_API_DOWN_MSG =
 export interface DriveImage {
   id: string;
   name: string;
-  url: string;
+  url: string; // /i/ thumbnail for pictures, /f/ download for other files
+  file?: boolean; // not a picture (zip, pdf, video, ...): no thumbnail
+  size?: number;
 }
 
 export interface DriveFolder {
@@ -19,8 +21,12 @@ export interface DriveFolder {
 
 export interface DriveListing {
   folders: DriveFolder[];
-  images: DriveImage[];
+  images: DriveImage[]; // pictures only (pickers, /gallery)
+  files?: DriveImage[]; // other file types, shown by the file manager only
 }
+
+// original bytes of any file in the site folder, as a download
+export const driveFileUrl = (id: string) => `${DRIVE_API}/f/${id}`;
 
 const DRIVE_ID_RE =
   /(?:drive\.google\.com\/(?:file\/d\/([\w-]+)|(?:open|uc|thumbnail)\?[^#]*?\bid=([\w-]+))|img\.meowpow\.online\/i\/([\w-]+(?:\.gif)?))/;

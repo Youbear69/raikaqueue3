@@ -22,20 +22,20 @@
 
   <div class="m-row">
     <label class="m-btn" [style.opacity]="uploading() || !apiUp() ? 0.5 : 1">
-      {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูป' }}
-      <input type="file" accept="image/*" multiple hidden [disabled]="uploading() || !apiUp()"
+      {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดไฟล์' }}
+      <input type="file" multiple hidden [disabled]="uploading() || !apiUp()"
         (change)="onUpload($event)" />
     </label>
     @if (!curFolder()) {
       <button class="m-btn" type="button" [disabled]="!apiUp()" (click)="newFolder()">สร้างโฟลเดอร์</button>
     }
     <button class="m-btn" type="button" [disabled]="!apiUp()" (click)="refresh()">รีเฟรช</button>
-    <span class="ex-hint">ลากรูปไปวางบนโฟลเดอร์ = ย้าย, ลากไฟล์จากเครื่องมาวาง = อัพโหลด</span>
+    <span class="ex-hint">ลากไฟล์ไปวางบนโฟลเดอร์ = ย้าย, ลากไฟล์จากเครื่องมาวาง = อัพโหลด (ทุกชนิด ไม่เกิน 100 MB)</span>
   </div>
 
   @if (selected().size) {
     <div class="m-row sel-bar">
-      <strong>เลือกแล้ว {{ selected().size }} รูป</strong>
+      <strong>เลือกแล้ว {{ selected().size }} รายการ</strong>
       <select class="m-input" style="max-width: 240px; flex: none" #mt>
         <option value="">ย้ายไป...</option>
         @for (t of moveTargets(); track t.id) {
@@ -91,10 +91,19 @@
       }
       @for (img of filtered(); track img.id; let i = $index) {
         <div class="ex-tile" draggable="true" [attr.data-id]="img.id" [class.sel]="selected().has(img.id)"
-          (click)="onTileClick($event, img, i)" (dblclick)="viewUrl.set(img.url)"
+          (click)="onTileClick($event, img, i)" (dblclick)="open(img)"
           (contextmenu)="openCtx($event, img, false)" (dragstart)="onDragStart($event, img)"
           (dragend)="onDragEnd()">
-          @if (isGif(img)) {
+          @if (img.file) {
+            <div class="ex-file" [title]="img.name">
+              <svg class="f-layer" viewBox="0 0 48 48">
+                <path fill="#9fb8a3" d="M12 4h17l11 11v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                <path fill="#d6e6d8" d="M29 4v9a2 2 0 0 0 2 2h9z" />
+                <rect x="10" y="27" width="30" height="11" rx="2" fill="var(--accent)" />
+              </svg>
+              <div class="ex-ext">{{ ext(img) }}</div>
+            </div>
+          } @else if (isGif(img)) {
             <gif-thumb [src]="img.url" />
           } @else {
             <img class="thumb" [src]="img.url" [alt]="img.name" loading="lazy" />
@@ -110,6 +119,9 @@
             </div>
           }
           <div class="ex-actions">
+            @if (img.file) {
+              <button class="ex-abtn" type="button" (click)="$event.stopPropagation(); downloadIds([img.id])">โหลด</button>
+            }
             <button class="ex-abtn" type="button" (click)="copy(img)">
               {{ copiedId() === img.id ? 'ก็อปแล้ว' : 'ก็อป URL' }}
             </button>
@@ -120,7 +132,7 @@
         </div>
       } @empty {
         @if ((curFolder() || !filteredFolders().length) && !pendingHere().length) {
-          <div class="m-empty">{{ query() ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีรูป' }}</div>
+          <div class="m-empty">{{ query() ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีไฟล์' }}</div>
         }
       }
       @if (marquee(); as m) {
@@ -129,7 +141,7 @@
       }
       @for (p of pendingHere(); track p.key) {
         <div class="ex-tile ghost">
-          @if (p.img) {
+          @if (p.img && !p.img.file) {
             <img class="thumb" [src]="p.img.url" alt="" />
           } @else {
             <div class="thumb ph"></div>
@@ -155,11 +167,12 @@
   <details class="ex-help">
     <summary><h3>วิธีใช้งาน</h3></summary>
     <ul>
-      <li>คลิก = เลือกรูป, Ctrl+คลิก = เลือกเพิ่ม/เอาออก, Shift+คลิก = เลือกช่วง, Ctrl+A = เลือกทั้งหมด, Esc = ยกเลิก</li>
-      <li>ดับเบิลคลิกรูป = ดูเต็มจอ, ดับเบิลคลิกโฟลเดอร์ = เปิดโฟลเดอร์</li>
+      <li>คลิก = เลือก, Ctrl+คลิก = เลือกเพิ่ม/เอาออก, Shift+คลิก = เลือกช่วง, Ctrl+A = เลือกทั้งหมด, Esc = ยกเลิก</li>
+      <li>ดับเบิลคลิกรูป = ดูเต็มจอ, ดับเบิลคลิกไฟล์อื่น = ดาวน์โหลด, ดับเบิลคลิกโฟลเดอร์ = เปิดโฟลเดอร์</li>
       <li>คลิกที่ชื่อ = เปลี่ยนชื่อ (Enter บันทึก, Esc ยกเลิก)</li>
       <li>ลากรูปวางบนโฟลเดอร์ = ย้ายเข้า, ลากวางบนปุ่ม &#8592; = ย้ายออกจากโฟลเดอร์ (ลากรูปที่เลือกไว้ = ย้ายทั้งชุด)</li>
-      <li>ลากไฟล์รูปจากเครื่องมาวางบนหน้า/บนโฟลเดอร์ = อัพโหลด (เลือกหลายไฟล์ได้)</li>
+      <li>ลากไฟล์จากเครื่องมาวางบนหน้า/บนโฟลเดอร์ = อัพโหลด ได้ทุกชนิด ไฟล์ละไม่เกิน 100 MB (เลือกหลายไฟล์ได้)</li>
+      <li>ดาวน์โหลด = ไฟล์ต้นฉบับ, เลือกหลายรายการ = ได้เป็น zip</li>
       <li>ปุ่ม "ก็อป URL" (hover บนรูป) เอาลิงก์ไปวางช่องรูปได้ทุกที่ในหน้า ตั้งค่า</li>
       <li>อัพรูป/สร้างโฟลเดอร์ในแอป Google Drive (โฟลเดอร์ raika-img-uploads) ก็แสดงที่นี่เหมือนกัน</li>
     </ul>
@@ -178,13 +191,13 @@
     @if (!c.isFolder) {
       <button type="button" (click)="ctxCopy()">คัดลอก URL</button>
       <button type="button" (click)="ctxDownload()">
-        ดาวน์โหลด{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}
+        ดาวน์โหลด{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รายการ' : '' }}
       </button>
     }
     <button type="button" (click)="ctxRename()">แก้ไขชื่อ</button>
     @if (!c.isFolder && moveTargets().length) {
       <div class="ctx-group">
-        <div class="ctx-sub">ย้าย{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}ไป...</div>
+        <div class="ctx-sub">ย้าย{{ ctxCount() > 1 ? ' ' + ctxCount() + ' รายการ' : '' }}ไป...</div>
         @for (t of moveTargets(); track t.id) {
           <button type="button" (click)="ctxMove(t.id)">
             <svg viewBox="0 0 48 48" class="ctx-ficon">
@@ -197,7 +210,7 @@
       </div>
     }
     <button type="button" class="im-del" (click)="ctxDelete()">
-      ลบ{{ c.isFolder ? 'โฟลเดอร์' : ctxCount() > 1 ? ' ' + ctxCount() + ' รูป' : '' }}
+      ลบ{{ c.isFolder ? 'โฟลเดอร์' : ctxCount() > 1 ? ' ' + ctxCount() + ' รายการ' : '' }}
     </button>
   </div>
 }
