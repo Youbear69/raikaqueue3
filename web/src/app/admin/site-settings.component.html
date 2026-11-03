@@ -135,6 +135,12 @@
         โพสต์ community หน้าแรก
       </label>
     </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().agentAnimOff" (change)="onFlag('agentAnimOff', $event)" />
+        แอนิเมชัน agent ช่วยกันแต่งเว็บตอนเลื่อนลง (หน้าแรก)
+      </label>
+    </div>
     <h3>บัตรห้อย 3D</h3>
     <div class="m-row">
       <label>

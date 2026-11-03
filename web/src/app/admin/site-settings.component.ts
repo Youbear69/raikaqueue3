@@ -35,6 +35,7 @@ const HOME_FIELDS: readonly (keyof Settings)[] = [
   'clipsOff',
   'statsOff',
   'postsOff',
+  'agentAnimOff',
   'lanyardOff',
   'lanyardFront',
   'lanyardBack',
