@@ -70,3 +70,6 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RAIKAQUEUE }}
           channelId: live
           projectId: raikaqueue
+          # ponytail: pinned - 15.34.1+ checks serviceusage.services.get, which the deploy SA lacks (403).
+          # Unpin after granting the SA roles/serviceusage.serviceUsageConsumer.
+          firebaseToolsVersion: "15.34.0"
