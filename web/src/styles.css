@@ -1255,17 +1255,20 @@ body[data-theme='light'] code {
 }
 
 /* ---- agent-build reveal (shared/agent-build.directive.ts) ----
-   ab-wait: whole section greyed until it scrolls in; then each target element
-   gets ab-pend (wireframe) -> ab-busy (agent working) -> ab-built (real design) */
-.ab-wait > :not(.ab-layer) { opacity: 0.35; filter: grayscale(1); }
-.ab-pend {
-  opacity: 0.35;
-  filter: grayscale(1) contrast(0.8);
-  outline: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent);
-  outline-offset: 2px;
-  transform: scale(0.97);
+   ab-wait: whole section hidden until it scrolls in; then each target element
+   gets ab-pend (hidden) -> ab-busy (agent working) -> ab-built (fades in) */
+.ab-wait > :not(.ab-layer) { opacity: 0; }
+/* not built yet = invisible (keeps its layout space so agents know where to go) */
+.ab-pend { opacity: 0; transform: scale(0.96); }
+/* agentBuild="frame": section box hidden until its agent builds it */
+.ab-host { transition: background-color 0.45s, border-color 0.45s, backdrop-filter 0.45s; }
+.ab-frame {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
-.ab-pend.ab-busy { opacity: 0.6; }
 .ab-built {
   transition: opacity 0.35s, filter 0.35s, transform 0.35s;
   animation: ab-snap 0.45s ease-out;
@@ -1274,8 +1277,16 @@ body[data-theme='light'] code {
   40% { transform: scale(1.03); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
 }
 .ab-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+/* Layout agent dragging an element in from off-screen */
+.ab-drag {
+  position: relative;
+  z-index: 6;
+  opacity: 1;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
 .ab-agent {
   position: absolute;
+  z-index: 2;
   left: 0;
   top: 0;
   transition: transform 0.32s cubic-bezier(0.3, 0.8, 0.3, 1), opacity 0.4s;
@@ -1307,6 +1318,7 @@ body[data-theme='light'] code {
 }
 .ab-sel {
   position: absolute;
+  z-index: 1;
   left: 0;
   top: 0;
   opacity: 0;
