@@ -1336,3 +1336,27 @@ body[data-theme='light'] code {
   width: 0;
   background: var(--ab-c);
 }
+/* Figma-style text editing: square 1px text box, I-beam cursor, blinking caret */
+.ab-sel.ab-text { border-width: 1px; border-radius: 0; background: none; }
+.ab-sel.ab-text .ab-bar { display: none; }
+.ab-ibeam {
+  display: none;
+  width: 10px;
+  height: 20px;
+  fill: none;
+  stroke: var(--ab-c);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 1px #000);
+}
+.ab-agent.ab-typing .ab-ptr { display: none; }
+.ab-agent.ab-typing .ab-ibeam { display: block; position: relative; z-index: 1; }
+.ab-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.12em;
+  background: var(--ab-c);
+  animation: ab-blink 1s steps(1) infinite;
+}
+@keyframes ab-blink { 50% { opacity: 0; } }
