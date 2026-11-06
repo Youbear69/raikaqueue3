@@ -60,7 +60,7 @@ export interface Settings {
   aboutText?: string; // nav About dropdown override (th)
   aboutTextEn?: string; // nav About dropdown override (en)
   lanyardOff?: boolean; // hide the 3D lanyard badge on home
-  agentAnimOff?: boolean; // disable the agent-build reveal animation on home sections
+  agentAnimOff?: boolean; // disable the page-load swarm rebuild on home (shared/swarm-build)
   lanyardFront?: string; // card front image URL (ID-1 ratio, cover-fit)
   lanyardBack?: string; // card back image URL
   lanyardStickers?: LanyardSticker[]; // stickers on the card front (max 6)
