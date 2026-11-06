@@ -67,6 +67,7 @@
   position: absolute;
   top: 100%;
   right: 0;
+  z-index: 20; /* above the switches/socials that follow it in the DOM (mobile rows) */
   min-width: 200px;
   background: rgba(5, 12, 4, 0.12);
   backdrop-filter: blur(12px);
@@ -293,7 +294,7 @@
 }
 
 /* Mobile: let the nav wrap into rows instead of cramming one line */
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .site-nav {
     padding: 10px 14px;
     gap: 8px;
@@ -305,11 +306,32 @@
     width: 30px;
     height: 30px;
   }
+  /* 3 tidy rows: brand + account / menus / switches + socials.
+     nav-links children join the nav's own flex flow; ::before/::after are row breaks */
+  .site-nav {
+    row-gap: 6px;
+    column-gap: 10px;
+    justify-content: flex-start;
+  }
   .nav-links {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 12px;
-    row-gap: 8px;
+    display: contents;
+  }
+  .site-nav::before,
+  .site-nav::after {
+    content: '';
+    flex-basis: 100%;
+    height: 0;
+  }
+  .nav-brand { order: 0; margin-right: auto; }
+  .nav-avatar, .btn-auth { order: 1; }
+  .site-nav::before { order: 2; }
+  .nav-dd { order: 3; }
+  .site-nav::after { order: 4; }
+  .switch, .nav-replay { order: 5; }
+  .nav-social, .ed-badge { order: 6; }
+  /* socials sit right of the switches; the first one pushes the group right */
+  .nav-sep + :is(.nav-social, .ed-badge) {
+    margin-left: auto;
   }
   .nav-sep {
     display: none;
@@ -320,6 +342,33 @@
   .nav-dd-menu {
     right: auto;
     left: 0;
+    max-width: calc(100vw - 28px);
+  }
+  .about-menu {
+    min-width: 0;
+    width: min(260px, calc(100vw - 28px));
+  }
+  .switch {
+    width: 40px;
+    height: 24px;
+  }
+  .knob {
+    width: 18px;
+    height: 18px;
+  }
+  .switch.on .knob {
+    left: 18px;
+  }
+  .nav-replay {
+    width: 24px;
+    height: 24px;
+  }
+  .nav-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .ed-img {
+    height: 20px;
   }
 }
 

@@ -154,12 +154,45 @@
   pointer-events: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
+  /* admin char X/Y/scale are tuned for desktop: ignored here, char sits full-width at the bottom */
   .char-stack {
     width: 100vw;
-    height: 60vh;
+    /* short phones: shrink so the char stays below the hero button */
+    height: clamp(260px, 100vh - 380px, 62vh);
     bottom: 0;
     left: 50%;
+    transform: translateX(-50%);
+  }
+  .hero {
+    padding-top: 5vh;
+    gap: 14px;
+  }
+  .hero-tagline {
+    font-size: 1rem;
+    padding: 0 26px;
+  }
+  /* Schedule tab moves below the hero text so it no longer covers the tagline */
+  .sched-panel {
+    top: 58vh;
+  }
+  .sched-tab {
+    width: 32px;
+  }
+  .sched-panel {
+    transform: translateX(calc(-100% + 32px));
+  }
+  .sched-panel.open {
+    transform: translateX(0);
+  }
+  .clips-section {
+    width: calc(100% - 20px);
+    padding: 18px 14px 22px;
+    gap: 14px;
+  }
+  .clips-head {
+    flex-wrap: wrap;
+    row-gap: 10px;
   }
 }
 
