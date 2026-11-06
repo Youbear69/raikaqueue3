@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewEncapsulation, afterNextRender, inject } from '@angular/core';
+import { Component, OnDestroy, ViewEncapsulation, afterNextRender, effect, inject, untracked } from '@angular/core';
 import { QueueService } from '../../services/queue.service';
 import { UiService } from '../../services/ui.service';
 
@@ -11,8 +11,9 @@ import { UiService } from '../../services/ui.service';
 //
 // The real DOM is never cloned: items are hidden with sw-* classes at snapshot
 // time and revealed in place. All overlay UI lives in one fixed layer.
-// Plays on every load of the home page (Esc / close skips it). Off when settings.agentAnimOff, the nav motion
-// switch is off, or the OS asks for reduced motion.
+// Plays once per browser tab (sessionStorage); turning the nav motion switch back
+// on replays it, turning it off (or Esc / close) stops it. Off when
+// settings.agentAnimOff, the motion switch is off, or the OS asks for reduced motion.
 
 type Box = { x: number; y: number; w: number; h: number };
 type Part = { n: Text; full: string; segs: string[] };
@@ -42,6 +43,7 @@ const ROOTS = 'site-nav, home-page .upper';
 const SKIP = 'lanyard-badge, .photo-lightbox, script, style, noscript, template, .sw-root';
 const MEDIA = 'img, svg, canvas, video, iframe';
 const STEPS = [24, 32, 40, 48, 56, 64, 72, 88, 104];
+const SS_KEY = 'raika-swarm-played';
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -127,15 +129,29 @@ export class SwarmBuildComponent implements OnDestroy {
   private maxAgents = 48;
 
   constructor() {
-    if (!this.ui.motion() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    document.documentElement.classList.add('sw-boot');
-    afterNextRender(() => this.boot());
+    let played = false;
+    try { played = !!sessionStorage.getItem(SS_KEY); } catch { /* storage blocked: just play */ }
+    if (!played && this.ui.motion() && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('sw-boot');
+      afterNextRender(() => this.boot());
+    }
+    // nav motion switch: off -> on replays the show, on -> off stops it
+    let prev = this.ui.motion();
+    effect(() => {
+      const on = this.ui.motion();
+      if (on === prev) return;
+      prev = on;
+      untracked(() => (on ? this.boot() : this.close()));
+    });
   }
 
   private async boot(): Promise<void> {
+    if (this.live || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     // ponytail: 3s cap so an offline RTDB never leaves the page blank
     await Promise.race([this.svc.settingsReady, new Promise((r) => setTimeout(r, 3000))]);
-    if (this.svc.settings().agentAnimOff) return void document.documentElement.classList.remove('sw-boot');
+    if (this.svc.settings().agentAnimOff || this.live || !this.ui.motion())
+      return void document.documentElement.classList.remove('sw-boot');
+    try { sessionStorage.setItem(SS_KEY, '1'); } catch { /* ignore */ }
     this.start();
   }
 
