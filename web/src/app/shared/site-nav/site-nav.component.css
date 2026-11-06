@@ -268,6 +268,25 @@
   left: 22px;
 }
 
+/* replay the home swarm animation: round button in the switch row */
+.nav-replay {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--badge-green);
+  background: var(--badge-green);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s, filter 0.15s;
+}
+.nav-replay:hover { filter: brightness(1.12); transform: scale(1.06); }
+.nav-replay .knob-icon { width: 14px; height: 14px; }
+
 .knob-icon {
   width: 12px;
   height: 12px;

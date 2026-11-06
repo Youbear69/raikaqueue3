@@ -38,6 +38,7 @@ const T = {
     motionTitle: 'เปิด/ปิดการเคลื่อนไหว',
     bgTitle: 'เปิด/ปิดภาพพื้นหลัง',
     themeTitle: 'ธีมมืด/สว่าง',
+    swarmTitle: 'ดูแอนิเมชันเปิดเว็บอีกครั้ง',
     viewCard: 'ดูรายละเอียด',
   },
   en: {
@@ -73,6 +74,7 @@ const T = {
     motionTitle: 'Toggle motion',
     bgTitle: 'Toggle background art',
     themeTitle: 'Dark/light theme',
+    swarmTitle: 'Replay the page build animation',
     viewCard: 'View details',
   },
 };
@@ -85,6 +87,9 @@ export class UiService {
   );
   readonly motion = signal(localStorage.getItem('ui_motion') !== 'off');
   readonly bgVisible = signal(localStorage.getItem('ui_bg') !== 'off');
+  // swarm page-load animation: present on this page (home) + replay requests from the nav button
+  readonly swarmHere = signal(false);
+  readonly swarmReplay = signal(0);
 
   readonly t = computed(() => T[this.lang()]);
 

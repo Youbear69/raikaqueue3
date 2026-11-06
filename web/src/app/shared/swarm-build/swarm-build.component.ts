@@ -143,13 +143,23 @@ export class SwarmBuildComponent implements OnDestroy {
       prev = on;
       untracked(() => (on ? this.boot() : this.close()));
     });
+    // nav replay button (shown only while this component is on the page)
+    this.ui.swarmHere.set(true);
+    let asked = this.ui.swarmReplay();
+    effect(() => {
+      const n = this.ui.swarmReplay();
+      if (n === asked) return;
+      asked = n;
+      untracked(() => (this.live ? this.replay() : this.boot(true)));
+    });
   }
 
-  private async boot(): Promise<void> {
-    if (this.live || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // force = the visitor asked for it with the replay button (ignores the motion switch)
+  private async boot(force = false): Promise<void> {
+    if (this.live || (!force && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
     // ponytail: 3s cap so an offline RTDB never leaves the page blank
     await Promise.race([this.svc.settingsReady, new Promise((r) => setTimeout(r, 3000))]);
-    if (this.svc.settings().agentAnimOff || this.live || !this.ui.motion())
+    if (this.svc.settings().agentAnimOff || this.live || (!force && !this.ui.motion()))
       return void document.documentElement.classList.remove('sw-boot');
     try { sessionStorage.setItem(SS_KEY, '1'); } catch { /* ignore */ }
     this.start();
@@ -284,6 +294,7 @@ export class SwarmBuildComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.ui.swarmHere.set(false);
     this.teardown();
     document.documentElement.classList.remove('sw-boot', 'sw-run');
   }
