@@ -1,0 +1,33 @@
+:host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Faded watermark conveyor — each tile drifts from off-screen top-left to
+   off-screen bottom-right and loops invisibly */
+.pattern {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.07;
+  filter: grayscale(1);
+}
+
+.pattern-tile {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  padding: 40px;
+  box-sizing: border-box;
+  animation: tile-drift 85s linear infinite;
+}
+
+@keyframes tile-drift {
+  to {
+    transform: translate(var(--travel), var(--travel));
+  }
+}

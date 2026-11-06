@@ -1,0 +1,218 @@
+<div class="master-container">
+  <header class="master-header">
+    <h1>ตั้งค่าหน้า register</h1>
+    <button class="m-btn" type="button" (click)="reset()">ล้างการตั้งค่า (ค่าเริ่มต้น)</button>
+  </header>
+
+  <section class="master-card settings-card">
+    <h3>คิว</h3>
+    <div class="m-row">
+      <label>จำกัดจำนวนคิว (0 = ไม่จำกัด)</label>
+      <input #limitInput class="m-input" type="number" min="0" [value]="svc.settings().queueLimit"
+        (input)="onLimit(limitInput.value)" />
+      <button class="m-btn" type="button" (click)="svc.setQueueLimit(0); limitInput.value = '0'">
+        ไม่จำกัด
+      </button>
+    </div>
+
+    <h3>ตัวละคร</h3>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().regCharOff" (change)="onFlag('regCharOff', $event)" />
+        แสดงตัวละคร
+      </label>
+    </div>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!svc.settings().regCharImgOff" (change)="onFlag('regCharImgOff', $event)" />
+        ใช้รูปตัวละครที่ตั้งเอง (ปิด = กลับไปใช้รูปเดิม โดยไม่ลบ URL)
+      </label>
+    </div>
+    <div class="m-row">
+      <label>รูปตัวละคร (URL, PNG พื้นหลังโปร่งแนะนำ)</label>
+      <input #regCharImg class="m-input" type="url" placeholder="https://... (เว้นว่าง = รูปเดิม)"
+        [value]="svc.settings().regCharImg || ''" (change)="svc.setRegCharImg(regCharImg.value)" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('char')">
+        เลือก/อัพโหลดรูป
+      </button>
+    </div>
+    <div class="m-row">
+      <label>ตำแหน่งตัวละคร X / Y (px, บวก = ขวา/ลง, ว่าง = 0)</label>
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="X"
+        [value]="svc.settings().regCharX ?? ''" (change)="setNum('regCharX', $any($event.target).value)" />
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="Y"
+        [value]="svc.settings().regCharY ?? ''" (change)="setNum('regCharY', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <label>แตะ/ลากบนแผ่นนี้ (กลาง = 0,0 / สุดขอบ = ±500px) — ปล่อยตรงไหน ค่านั้นถูกบันทึก</label>
+      <div class="xy-pad" (pointerdown)="padStart($event, 'char')" (pointermove)="padMove($event, 'char')"
+        (pointerup)="padEnd($event, 'char')" (pointercancel)="padEnd($event, 'char')">
+        <div class="xy-dot" [style.left.%]="padPos('char').x" [style.top.%]="padPos('char').y"></div>
+      </div>
+    </div>
+    <div class="m-row">
+      <label>ขนาดตัวละคร (%, ว่าง = 100)</label>
+      <input class="m-input" type="number" min="10" max="300" style="max-width: 120px" placeholder="100"
+        [value]="svc.settings().regCharScale ?? ''" (change)="setNum('regCharScale', $any($event.target).value)" />
+      <input type="range" min="10" max="300" step="5" style="flex: 1; max-width: 300px"
+        [value]="svc.settings().regCharScale ?? 100"
+        (input)="onScaleSlide('regCharScale', $any($event.target).value, false)"
+        (change)="onScaleSlide('regCharScale', $any($event.target).value, true)" />
+      <span>{{ svc.settings().regCharScale ?? 100 }}%</span>
+    </div>
+
+    <h3>Win rate</h3>
+    <div class="m-row">
+      <label>เกมที่แสดงการ์ด win rate (control + register)</label>
+      @for (g of svc.gameNames(); track g) {
+      <label>
+        <input type="checkbox" [checked]="wrChecked(g)" (change)="svc.toggleWrGame(g)" />
+        {{ g }}
+      </label>
+      }
+    </div>
+    <div class="m-row">
+      <label>ตำแหน่งแผง Win Rate X / Y (px, บวก = ขวา/ลง, ว่าง = 0)</label>
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="X"
+        [value]="svc.settings().regWrX ?? ''" (change)="setNum('regWrX', $any($event.target).value)" />
+      <input class="m-input" type="number" style="max-width: 120px" placeholder="Y"
+        [value]="svc.settings().regWrY ?? ''" (change)="setNum('regWrY', $any($event.target).value)" />
+    </div>
+    <div class="m-row">
+      <div class="row">
+        <label>แตะ/ลากปรับตำแหน่งแผง Win Rate</label>
+        <div class="xy-pad" (pointerdown)="padStart($event, 'wr')" (pointermove)="padMove($event, 'wr')"
+          (pointerup)="padEnd($event, 'wr')" (pointercancel)="padEnd($event, 'wr')">
+          <div class="xy-dot" [style.left.%]="padPos('wr').x" [style.top.%]="padPos('wr').y"></div>
+        </div>
+      </div>
+      <div class="row"></div>
+    </div>
+
+    <h3>ฟีเจอร์</h3>
+    <div class="m-row">
+      <label>
+        <input type="checkbox" [checked]="!!svc.settings().showHands"
+          (change)="svc.setShowHands(!svc.settings().showHands)" />
+        รูปมือถือการ์ด (เมื่อโชว์เกมเดียว)
+      </label>
+    </div>
+    <div class="m-row">
+      <label>รูปมือซ้าย (URL, เว้นว่าง = รูปเดิม)</label>
+      <input #handL class="m-input" type="url" placeholder="https://..." [value]="svc.settings().regHandLeft || ''"
+        (change)="svc.setHandImg('regHandLeft', handL.value)" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('handL')">
+        เลือก/อัพโหลดรูป
+      </button>
+    </div>
+    <div class="m-row">
+      <label>รูปมือขวา (URL, เว้นว่าง = รูปเดิม)</label>
+      <input #handR class="m-input" type="url" placeholder="https://..." [value]="svc.settings().regHandRight || ''"
+        (change)="svc.setHandImg('regHandRight', handR.value)" />
+      <button class="m-btn" type="button" [disabled]="!apiUp()" [title]="apiUp() ? '' : 'เซิร์ฟเวอร์รูปออฟไลน์'"
+        (click)="openPicker('handR')">
+        เลือก/อัพโหลดรูป
+      </button>
+    </div>
+    <div class="m-row">
+      <div class="row">
+        <label>ตำแหน่งมือซ้าย X / Y (px)</label>
+        <input class="m-input" type="number" style="max-width: 120px" placeholder="X"
+          [value]="svc.settings().regHandLX ?? ''" (change)="setNum('regHandLX', $any($event.target).value)" />
+        <input class="m-input" type="number" style="max-width: 120px" placeholder="Y"
+          [value]="svc.settings().regHandLY ?? ''" (change)="setNum('regHandLY', $any($event.target).value)" />
+      </div>
+      <div class="row">
+        <label>ตำแหน่งมือขวา X / Y (px)</label>
+        <input class="m-input" type="number" style="max-width: 120px" placeholder="X"
+          [value]="svc.settings().regHandRX ?? ''" (change)="setNum('regHandRX', $any($event.target).value)" />
+        <input class="m-input" type="number" style="max-width: 120px" placeholder="Y"
+          [value]="svc.settings().regHandRY ?? ''" (change)="setNum('regHandRY', $any($event.target).value)" />
+      </div>
+    </div>
+    <div class="m-row">
+      <div class="row">
+        <label>แตะ/ลากปรับตำแหน่งมือซ้าย</label>
+        <div class="xy-pad" (pointerdown)="padStart($event, 'handL')" (pointermove)="padMove($event, 'handL')"
+          (pointerup)="padEnd($event, 'handL')" (pointercancel)="padEnd($event, 'handL')">
+          <div class="xy-dot" [style.left.%]="padPos('handL').x" [style.top.%]="padPos('handL').y"></div>
+        </div>
+      </div>
+      <div class="row">
+        <label>แตะ/ลากปรับตำแหน่งมือขวา</label>
+        <div class="xy-pad" (pointerdown)="padStart($event, 'handR')" (pointermove)="padMove($event, 'handR')"
+          (pointerup)="padEnd($event, 'handR')" (pointercancel)="padEnd($event, 'handR')">
+          <div class="xy-dot" [style.left.%]="padPos('handR').x" [style.top.%]="padPos('handR').y"></div>
+        </div>
+      </div>
+    </div>
+    <div class="m-row">
+      <label>ขนาดมือ (%, ทั้งสองข้าง, ว่าง = 100)</label>
+      <input class="m-input" type="number" min="10" max="300" style="max-width: 120px" placeholder="100"
+        [value]="svc.settings().regHandScale ?? ''" (change)="setNum('regHandScale', $any($event.target).value)" />
+      <input type="range" min="10" max="300" step="5" style="flex: 1; max-width: 300px"
+        [value]="svc.settings().regHandScale ?? 100"
+        (input)="onScaleSlide('regHandScale', $any($event.target).value, false)"
+        (change)="onScaleSlide('regHandScale', $any($event.target).value, true)" />
+      <span>{{ svc.settings().regHandScale ?? 100 }}%</span>
+    </div>
+
+    @if (picker(); as pickTarget) {
+    <div class="pk-overlay" (click)="picker.set(null)">
+      <div class="pk-box" (click)="$event.stopPropagation()">
+        <div>เลือกรูป{{ pickerLabel[pickTarget] }} (จาก Google Drive folder)</div>
+        <div>
+          <label class="m-btn" [style.opacity]="uploading() ? 0.5 : 1">
+            {{ uploading() ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปใหม่' }}
+            <input type="file" accept="image/*" hidden [disabled]="uploading()" (change)="onUpload($event)" />
+          </label>
+        </div>
+        @if (pickerError()) {
+        <div class="pk-err">{{ pickerError() }}</div>
+        }
+        @if (gallery(); as g) {
+        @if (pickFolder(); as pf) {
+        <div>
+          <button class="m-btn" type="button" (click)="pickerGo(null)">&lsaquo; กลับ</button>
+          <strong>{{ pf.name }}</strong>
+        </div>
+        } @else if (g.folders.length) {
+        <div>
+          @for (f of g.folders; track f.id) {
+          <button class="m-btn" type="button" (click)="pickerGo(f)">{{ f.name }}</button>
+          }
+        </div>
+        }
+        <div class="pk-grid">
+          @for (img of g.images; track img.id) {
+          <img [src]="img.url" [alt]="img.name" [title]="img.name" (click)="pickImage(img.url)" />
+          } @empty {
+          <div>ยังไม่มีรูปใน folder</div>
+          }
+        </div>
+        } @else {
+        <div>กำลังโหลด...</div>
+        }
+      </div>
+    </div>
+    }
+
+  </section>
+</div>
+
+@if (previewOpen()) {
+<div class="float-preview">
+  <div class="fp-head">
+    <span>ตัวอย่างหน้า register (สด)</span>
+    <button class="m-btn" type="button" (click)="togglePreview()">ซ่อน</button>
+  </div>
+  <div class="hp-frame-wrap" #wrap [style.height.px]="PREVIEW_H * scale()">
+    <iframe class="hp-frame" src="/register" title="Register preview" [style.width.px]="PREVIEW_W"
+      [style.height.px]="PREVIEW_H" [style.transform]="'scale(' + scale() + ')'"></iframe>
+  </div>
+</div>
+} @else {
+<button class="m-btn fp-toggle" type="button" (click)="togglePreview()">ตัวอย่าง</button>
+}

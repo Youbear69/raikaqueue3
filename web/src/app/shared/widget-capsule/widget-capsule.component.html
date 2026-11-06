@@ -1,0 +1,8 @@
+<div class="raika-widget-capsule" #capsule>
+  <div class="widget-playing" [style.fontSize]="fontSize()">
+    Playing With : <span class="widget-playing-name" #playingEl>{{ playingName() }}</span>
+  </div>
+  <div class="widget-queue">
+    Next Queue : <span class="widget-queue-names" #queueEl>{{ nextNames() }}</span>
+  </div>
+</div>

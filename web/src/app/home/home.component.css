@@ -1,0 +1,487 @@
+:host {
+  display: block;
+  position: relative;
+  background: var(--bg-color);
+}
+
+.upper {
+  position: relative;
+}
+
+/* First screen: character clipped here; the clips card below overlaps
+   this edge so the cut line is hidden under the blurred card top */
+.landing {
+  position: relative;
+  height: calc(100vh - 74px);
+  overflow: hidden;
+}
+
+/* Dark band under the nav fading into the page (own layer: below hero, above pattern) */
+:host::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 320px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0) 100%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+:host-context(body[data-theme='light'])::after {
+  background: linear-gradient(to bottom, rgba(207, 229, 197, 0.95) 0%, rgba(207, 229, 197, 0.55) 40%, rgba(207, 229, 197, 0) 100%);
+}
+
+.hero {
+  position: relative;
+  z-index: 7;
+  text-align: center;
+  padding: 8vh 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.hero-title {
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 800;
+  color: var(--text-white);
+  text-shadow: 0 0 30px var(--accent-glow);
+}
+
+.hero-tagline {
+  color: var(--text-white);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+:host-context(body[data-theme='light']) .hero-tagline {
+  color: var(--text-gray);
+}
+
+/* Sits next to the "latest clips" heading; pushes the channel link right */
+.clips-head .hero-subs {
+  margin-right: auto;
+}
+
+.hero-subs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-gray);
+  font-size: 0.95rem;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 6px 18px;
+}
+
+.hero-subs:hover {
+  color: var(--text-white);
+  border-color: var(--accent-glow);
+}
+
+.subs-icon {
+  width: 18px;
+  height: 18px;
+  color: #ff0000;
+}
+
+:host-context(body[data-theme='light']) .hero-subs {
+  background: rgba(15, 43, 19, 0.15);
+  color: var(--text-white);
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero-btn {
+  padding: 12px 26px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-white);
+  text-decoration: none;
+  font-size: 1.05rem;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.hero-btn:hover {
+  background: var(--input-bg);
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+
+/* Same glass look as .home-footer */
+.hero-btn.primary {
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+}
+
+.hero-btn.primary:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* 3-layer stacked character with cursor parallax:
+   layer 3 (back) #90f25c, layer 2 #ffd278 — colored silhouettes via mask,
+   layer 1 (front) real image with 3px #cefd88 outline */
+/* Width is vh-driven so the rendered size scales with viewport height —
+   visible portion stays ~66vh on any screen (mask-size contain is
+   width-limited, rendered height ~= 0.95 * width; 152vh - 86vh = 66vh) */
+.char-stack {
+  position: absolute;
+  z-index: 1;
+  left: 58%;
+  bottom: -86vh;
+  /* --char-x / --char-y / --char-scale: admin-set offset + size from site settings.
+     Settings load after first paint, so the transition animates 0,0 -> saved spot. */
+  transform: translate(calc(-50% + var(--char-x, 0px)), var(--char-y, 0px))
+    scale(var(--char-scale, 1));
+  transform-origin: 50% 100%;
+  transition: transform 0.9s cubic-bezier(0.22, 0.9, 0.3, 1);
+  width: min(160vh, 107vw);
+  height: 179vh;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .char-stack {
+    width: 100vw;
+    height: 60vh;
+    bottom: 0;
+    left: 50%;
+  }
+}
+
+.char-layer {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: var(--char-url);
+  mask-image: var(--char-url);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Mouse = light source: shadows cast away from it (mouse top -> shadows fall down).
+   Scale from center = thin even halo, direction comes from translate only */
+.layer-2 {
+  background: #ffd278;
+  transform: translate(calc(var(--mx) * -26px), calc(var(--my) * -26px)) scale(1.02);
+  transform-origin: center;
+  transition: transform 0.25s ease-out;
+}
+
+.layer-3 {
+  background: #90f25c;
+  transform: translate(calc(var(--mx) * -48px), calc(var(--my) * -48px)) scale(1.04);
+  transform-origin: center;
+  transition: transform 0.35s ease-out;
+}
+
+.char-front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transform: translate(calc(var(--mx) * -3px), calc(var(--my) * -3px));
+  transition: transform 0.15s ease-out;
+  filter: drop-shadow(3px 0 0 #cefd88) drop-shadow(-3px 0 0 #cefd88)
+    drop-shadow(0 3px 0 #cefd88) drop-shadow(0 -3px 0 #cefd88);
+}
+
+/* Latest clips: big glass card cutting over the character art behind it */
+.clips-section {
+  position: relative;
+  z-index: 5;
+  width: min(1250px, calc(100% - 48px));
+  margin: -50px auto 60px;
+  padding: 28px 28px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+}
+
+:host-context(body[data-theme='light']) .clips-section {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(33, 150, 83, 0.55);
+}
+
+/* Schedule Week slide-out panel (left edge of first screen) */
+.sched-panel {
+  position: absolute;
+  z-index: 6;
+  left: 0;
+  top: 12vh;
+  display: flex;
+  align-items: stretch;
+  transform: translateX(calc(-100% + 40px));
+  transition: transform 0.28s ease;
+}
+
+.sched-panel.open {
+  transform: translateX(0);
+  z-index: 7;
+}
+
+.sched-img {
+  width: min(420px, 72vw);
+  display: block;
+  border: 1px solid var(--border-soft);
+  border-left: none;
+  background: rgba(0, 0, 0, 0.6);
+  cursor: zoom-in;
+}
+
+.sched-tab {
+  width: 40px;
+  border: 1px solid var(--border-soft);
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-white);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 0;
+}
+
+.sched-tab:hover {
+  background: rgba(39, 174, 96, 0.4);
+}
+
+.sched-arrow {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform 0.28s ease;
+}
+
+.sched-arrow.open {
+  transform: rotate(180deg);
+}
+
+.sched-label {
+  writing-mode: vertical-rl;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
+:host-context(body[data-theme='light']) .sched-tab {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+:host-context(body[data-theme='light']) .sched-img {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Latest community post card */
+.post-section {
+  margin-top: 0;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.post-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px var(--accent-glow);
+}
+
+.post-card-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+}
+
+.post-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  flex: 1;
+}
+
+.post-card-text {
+  color: var(--text-white);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-card-link {
+  margin-top: auto;
+  align-self: flex-end;
+  font-weight: 600;
+}
+
+:host-context(body[data-theme='light']) .post-card {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(33, 150, 83, 0.55);
+}
+
+.clips-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.clips-head h2 {
+  color: var(--text-white);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.yt-link {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.yt-link:hover {
+  color: var(--accent);
+}
+
+.clips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.clip-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.clip-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px var(--accent-glow);
+}
+
+.clip-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.clip-title {
+  padding: 10px 12px;
+  color: var(--text-white);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.yt-frame {
+  width: min(640px, 100%);
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 10px;
+  display: block;
+}
+
+:host-context(body[data-theme='light']) .clip-card {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(33, 150, 83, 0.55);
+}
+
+.home-footer {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 74px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 8px 22px;
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+:host-context(body[data-theme='light']) .hero-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+:host-context(body[data-theme='light']) .hero-btn.primary {
+  background: rgba(15, 43, 19, 0.2);
+  color: #ffffff;
+}
+
+:host-context(body[data-theme='light']) .hero-btn.primary:hover {
+  background: rgba(15, 43, 19, 0.35);
+}
+
+/* Footer sits on top of the bright character art - needs a solid dark pill */
+:host-context(body[data-theme='light']) .home-footer {
+  background: rgba(15, 43, 19, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+:host-context(body[data-theme='light']) .hero-title {
+  text-shadow: 0 0 30px rgba(39, 174, 96, 0.35);
+}
