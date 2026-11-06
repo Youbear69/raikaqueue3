@@ -6,11 +6,11 @@ import { LanyardComponent } from '../shared/lanyard/lanyard.component';
 import { HeroButton, QueueService } from '../services/queue.service';
 import { UiService } from '../services/ui.service';
 import { DRIVE_API } from '../shared/drive-url';
-import { AgentBuildDirective } from '../shared/agent-build.directive';
+import { SwarmBuildComponent } from '../shared/swarm-build/swarm-build.component';
 
 @Component({
   selector: 'home-page',
-  imports: [RouterLink, SiteBgComponent, SiteNavComponent, LanyardComponent, AgentBuildDirective],
+  imports: [RouterLink, SiteBgComponent, SiteNavComponent, LanyardComponent, SwarmBuildComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })

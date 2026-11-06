@@ -1,9 +1,10 @@
 <site-bg />
 <site-nav />
+<swarm-build />
 
 <div class="upper">
 <div class="landing">
-<main class="hero" agentBuild>
+<main class="hero">
   <h1 class="hero-title">
     {{ ui.pick(svc.settings().siteTitle, svc.settings().siteTitleEn) || 'Kerori Raika' }}
   </h1>
@@ -72,7 +73,7 @@
 </div>
 
 @if (!svc.settings().clipsOff) {
-<section class="clips-section" agentBuild="frame">
+<section class="clips-section">
   <div class="clips-head">
     <h2>{{ ui.t().latestClips }}</h2>
     @if (subs() !== null && !svc.settings().statsOff) {
@@ -123,7 +124,7 @@
 }
 
 @if (posts().length && !svc.settings().postsOff) {
-  <section class="clips-section post-section" agentBuild="frame">
+  <section class="clips-section post-section">
     <div class="clips-head">
       <h2>{{ ui.t().latestPost }}</h2>
     </div>
